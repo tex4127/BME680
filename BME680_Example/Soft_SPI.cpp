@@ -1,3 +1,19 @@
+//////////////////////////////////////////////////////////
+///
+//  Copyright (c) 2024
+//  Author: Jacob Garner, mlgtex4127@gmail.com
+//  
+//  Filename: BME680.h
+//
+//  Description:
+//  This code is designed to leverage Software SPI communications for specific uses
+//  on PCBs where the Hardware SPI pins are being used for other purposes
+//
+//  We are working from basic Arduino methods to keep code overhead low
+///
+//////////////////////////////////////////////////////////
+
+
 #include "Soft_SPI.h"
 
 /*!
