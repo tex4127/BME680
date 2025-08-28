@@ -15,12 +15,19 @@
 
 #define BME68X_MAX_READ_LENGTH 51
 
+//Delay/Idle function
 void BME680_delayUs(uint32_t us, void* intf);
-int8_t BME680_SPIWrite(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf);
+//Hardware SPI
+int8_t BME680_SPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf);
 int8_t BME680_SPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf);
-int8_t BME680_I2CWrite(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf);
+//Software SPI
+int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf);
+int8_t BME680_SSPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf);
+//Hardware I2C
+int8_t BME680_I2CWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf);
 int8_t BME680_I2CRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf);
 
+/// @brief Enumerated values for Oversampling
 typedef enum{
     BME680_OS_NONE = BME68X_OS_NONE,
     BME680_OS_1X = BME68X_OS_1X,
@@ -30,6 +37,7 @@ typedef enum{
     BME680_OS_16X = BME68X_OS_16X
 } BME680_OS_e;
 
+/// @brief Enumerated values for BME680 Modes
 typedef enum{
     BME680_MODE_SLEEP = BME68X_SLEEP_MODE,
     BME680_MODE_FORCED = BME68X_FORCED_MODE,
@@ -37,6 +45,7 @@ typedef enum{
     BME680_MODE_SEQUENTIAL = BME68X_SEQUENTIAL_MODE
 } BME680_Mode_e;
 
+/// @brief Enumerated values for BME680 Filter Size
 typedef enum{
     BME680_FILTER_OFF       = BME68X_FILTER_OFF,
     BME680_FILTER_SIZE_1    = BME68X_FILTER_SIZE_1,
@@ -48,6 +57,7 @@ typedef enum{
     BME680_FILTER_SIEZ_127  = BME68X_FILTER_SIZE_127
 } BME680_FilterSize_e;
 
+/// @brief Enumerated values for BME680 ODR timing
 typedef enum{
     BME680_ODR_NONE         = BME68X_ODR_NONE,
     BME680_ODR_590us        = BME68X_ODR_0_59_MS,
@@ -60,14 +70,39 @@ typedef enum{
     BME680_ODR_1000ms       = BME68X_ODR_1000_MS 
 } BME680_ODR_e;
 
+/// @brief Interface union to for use with BME680 API
+typedef union{
+    struct{
+        TwoWire *m_i2c;
+        uint8_t i2cAddr;
+        uint8_t _b1;
+        uint8_t _b2;
+        uint8_t _b3;
+    } i2c;
+    struct{
+        SPIClass *m_spi;
+        uint8_t cs;
+        uint8_t mosi;
+        uint8_t miso;
+        uint8_t sck;
+    } spi;
+    struct{
+        SPIClass *m_spi;
+        uint8_t cs;
+        uint8_t mosi;
+        uint8_t miso;
+        uint8_t sck;
+    }sspi;
+} BME_Interface_u;
 
+/// @brief Main BME680 Class 
 class BME680{
     public:
     BME680();                                                                   //Default Constructor
     BME680(uint8_t addr = BME680_I2C_ADDRESS_DEFAULT, TwoWire* wire = &Wire);   //I2C Interface
     BME680(uint8_t csPin, SPIClass* spi = &SPI);                                //SPI (Hardware) Interface
-    BME680(uint8_t csPin, uint8_t mosiPin, uint8_t misoPi, uint8_t sckPin);     //SPI (Software) Interface
-    bool begin();
+    BME680(uint8_t csPin, uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin);     //SPI (Software) Interface
+    void begin();
     bool begun();
     uint8_t readRegister(uint8_t regAddr);
     void readRegister(uint8_t regAddr, uint8_t* buf, uint32_t bufLen);
@@ -105,16 +140,7 @@ class BME680{
     private:
     bool _begun = false;
     uint8_t intfType = 0; //For ease of use: 0x00 ==none, 0x01 == I2C, 0x02 == H_SPI, 0x04 == S_SPI
-    TwoWire* m_i2c;
-    SPIClass* m_spi;
-    SPISettings* m_spiSettings;
-    uint8_t csAddr;     
-    uint8_t mosi;
-    uint8_t miso;
-    uint8_t sck;
-    uint32_t freq = 4000000;
-    uint8_t dataOrder = MSBFIRST;
-    uint8_t dataMode = SPI_MODE0;       //CPOL=0, CPHA=0
+    BME_Interface_u interface;
     //bme68x lib defs
     bme68x_data b_data[3];
     bme68x_dev b_dev;

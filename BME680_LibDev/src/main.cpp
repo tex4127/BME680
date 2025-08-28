@@ -10,8 +10,12 @@ void setup() {
   while(!Serial)
     ;
   Serial.printf("Initializing BME680 Chip\n");
+  //bme = new BME680(10,&SPI);
   bme = new BME680(10,11,12,13);
   bme->begin();
+  Serial.printf("BME Status -> %i\n", bme->getStatus());
+  while(1)
+    ; 
 }
 
 void loop() {
