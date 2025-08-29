@@ -8,6 +8,7 @@
 
 #include "bme68x/bme68x.h"
 
+#define BME680_Data bme68x_data
 //#define BME68X_ERROR
 //#define BME68X_WARNING
 
@@ -106,7 +107,7 @@ class BME680{
     void setOperMode(BME680_Mode_e);
 
     void getSensor_OS();
-    void setSensor_OS(BME680_OS_e osTemp, BME680_OS_e osPres, BME680_OS_e osHum);
+    void setSensor_OS(BME680_OS_e osTemp=BME680_OS_e::BME680_OS_1X, BME680_OS_e osPres=BME680_OS_e::BME680_OS_1X, BME680_OS_e osHum=BME680_OS_e::BME680_OS_1X);
 
     BME680_FilterSize_e getFilter();
     void setFilter(BME680_FilterSize_e);
@@ -125,7 +126,7 @@ class BME680{
 
     uint32_t getUID();
 
-    void getMeasurementTime(uint8_t _mode = BME68X_SLEEP_MODE);
+    uint32_t getMeasurementTime(BME680_Mode_e _mode = BME680_Mode_e::BME680_MODE_SLEEP);
     void setAmbientTemp(int8_t temp=25);
     int8_t getStatus();
     int8_t intfError();

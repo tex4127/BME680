@@ -292,6 +292,16 @@ uint32_t BME680::getUID(){
     return uid;
 }
 
+/// @brief Gets the measurement time in microSeconds for the chip based on the device configuration
+/// @param _mode Current operating mode
+/// @return Time in microSeconds for measurement duration
+uint32_t BME680::getMeasurementTime(BME680_Mode_e _mode){
+    if(_mode = BME680_Mode_e::BME680_MODE_SLEEP){
+        _mode = b_mode;
+    }
+    return bme68x_get_meas_dur((uint8_t)_mode, &b_conf, &b_dev);
+}
+
 /// @brief Sets the ambient temp poriton of bme68x_dev
 /// @param temp ambient temperature to apply to b_dev
 void BME680::setAmbientTemp(int8_t temp){
@@ -330,7 +340,7 @@ void BME680_delayUs(uint32_t us, void* intf){
 /// @param intf Pointer to digital communication object
 /// @return Error code (int8_t) bassed on communication state. 
 int8_t BME680_SPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf){
-    Serial.printf("Writting SPI -> reg Addr %u | len %u |\n", regAddr, len);
+    //Serial.printf("Writting SPI -> reg Addr %u | len %u |\n", regAddr, len);
     BME_Interface_u *comm = NULL;
     int8_t res = BME68X_OK;
     if(intf){
@@ -340,7 +350,7 @@ int8_t BME680_SPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* 
             comm->spi.m_spi->transfer(regAddr);
             for (uint32_t i = 0; i < len; i++){
                 comm->spi.m_spi->transfer(buf[i]);
-                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+                //Serial.printf("buf[%u] -> %u\n", i, buf[i]);
             }
             digitalWrite(comm->spi.cs, HIGH);
         }else{
@@ -359,7 +369,7 @@ int8_t BME680_SPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* 
 /// @param intf Pointer to digital communication
 /// @return Error code (int8_t) bassed on communication state
 int8_t BME680_SPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
-    Serial.printf("Reading SPI -> reg Addr %u | len %u |\n", regAddr, len);
+    //Serial.printf("Reading SPI -> reg Addr %u | len %u |\n", regAddr, len);
     BME_Interface_u *comm= NULL;
     int8_t res = BME68X_OK;
     if(intf){
@@ -370,7 +380,7 @@ int8_t BME680_SPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
             memset(buf, 0xFF, len);
             for(uint32_t i = 0; i < len; i++){
                 buf[i] = comm->spi.m_spi->transfer(0xFF);
-                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+                //Serial.printf("buf[%u] -> %u\n", i, buf[i]);
             }
             digitalWrite(comm->spi.cs, HIGH);
         }else{
