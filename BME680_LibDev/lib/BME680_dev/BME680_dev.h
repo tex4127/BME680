@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include "Wire.h"
 #include "SPI.h"
+#include "../SoftwareSPI/SoftwareSPI.h"
 
 #include "bme68x/bme68x.h"
 
@@ -75,23 +76,14 @@ typedef union{
     struct{
         TwoWire *m_i2c;
         uint8_t i2cAddr;
-        uint8_t _b1;
-        uint8_t _b2;
-        uint8_t _b3;
     } i2c;
     struct{
         SPIClass *m_spi;
         uint8_t cs;
-        uint8_t mosi;
-        uint8_t miso;
-        uint8_t sck;
     } spi;
     struct{
-        SPIClass *m_spi;
+        SSPIClass *m_spi;
         uint8_t cs;
-        uint8_t mosi;
-        uint8_t miso;
-        uint8_t sck;
     }sspi;
 } BME_Interface_u;
 
@@ -101,7 +93,8 @@ class BME680{
     BME680();                                                                   //Default Constructor
     BME680(uint8_t addr = BME680_I2C_ADDRESS_DEFAULT, TwoWire* wire = &Wire);   //I2C Interface
     BME680(uint8_t csPin, SPIClass* spi = &SPI);                                //SPI (Hardware) Interface
-    BME680(uint8_t csPin, uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin);     //SPI (Software) Interface
+    //BME680(uint8_t csPin, uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin);     //SPI (Software) Interface
+    BME680(uint8_t csPin, SSPIClass* sspi);
     void begin();
     bool begun();
     uint8_t readRegister(uint8_t regAddr);

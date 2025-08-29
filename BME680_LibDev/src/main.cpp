@@ -2,6 +2,7 @@
 #include "BME680_dev.h"
 
 BME680* bme;
+SSPIClass *SSPI;
 
 void setup() {
   Serial.begin(115200);
@@ -11,9 +12,15 @@ void setup() {
     ;
   Serial.printf("Initializing BME680 Chip\n");
   //bme = new BME680(10,&SPI);
-  bme = new BME680(10,11,12,13);
+  
+  SSPI = new SSPIClass(10, 11, 12, 13, MSBFIRST, SPI_MODE0, SPI_CLOCK_DIV128);
+  SSPI->begin();
+  bme = new BME680(10, SSPI);
+  
   bme->begin();
   Serial.printf("BME Status -> %i\n", bme->getStatus());
+  Serial.printf("State of SCK Pin %u\n", digitalRead(13));
+  Serial.printf("State of CS Pin  %u\n", digitalRead(10));
   while(1)
     ; 
 }

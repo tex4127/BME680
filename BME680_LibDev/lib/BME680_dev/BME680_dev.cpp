@@ -28,12 +28,10 @@ BME680::BME680(uint8_t csPin, SPIClass* spi){
 /// @param mosiPin Master Out Slave In pin
 /// @param misoPin Master In Slave Out pin
 /// @param sckPin SPI Clock pin
-BME680::BME680(uint8_t csPin, uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin){
+//BME680::BME680(uint8_t csPin, uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin){
+BME680::BME680(uint8_t csPin, SSPIClass* sspi){
     interface.sspi.cs = csPin;
-    interface.sspi.m_spi = &SPI; //testing out if a null ptr is giving the issue here...
-    interface.sspi.mosi = mosiPin;
-    interface.sspi.miso = misoPin;
-    interface.sspi.sck = sckPin;
+    interface.sspi.m_spi = sspi; //testing out if a null ptr is giving the issue here...
     intfType = 0x04;
 }
 
@@ -87,11 +85,7 @@ void BME680::begin(){
         case 0x04:
         /*Start S_SPI Device*/
         Serial.printf("Starting Software SPI Comms\n");
-        pinMode(interface.sspi.cs, OUTPUT);
-        pinMode(interface.sspi.mosi, OUTPUT);
-        pinMode(interface.sspi.miso, INPUT);
-        pinMode(interface.sspi.sck, OUTPUT);
-        digitalWrite(interface.sspi.sck, HIGH); //SPI Mode 0
+        interface.sspi.m_spi->begin();
         digitalWrite(interface.sspi.cs, HIGH);
         delay(1);
         digitalWrite(interface.sspi.cs, LOW);
@@ -396,15 +390,25 @@ int8_t BME680_SPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
 int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf){
     Serial.printf("Writting SSPI -> reg Addr %u | len %u |\n", regAddr, len);
     BME_Interface_u *comm = (BME_Interface_u *)intf;
-    digitalWrite(comm->sspi.cs, LOW);
-    shiftOut(comm->sspi.mosi, comm->sspi.sck, MSBFIRST, regAddr);
-    for (uint32_t i = 0; i < len; i++){
-        shiftOut(comm->sspi.mosi, comm->sspi.sck, MSBFIRST, buf[i]);
-        Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+    int8_t res = BME68X_OK;
+    if(intf){
+        comm = (BME_Interface_u *)intf;
+        if(comm->sspi.m_spi){
+            digitalWrite(comm->sspi.cs, LOW);
+            comm->sspi.m_spi->transfer(regAddr);
+            for (uint32_t i = 0; i < len; i++){
+                comm->sspi.m_spi->transfer(buf[i]);
+                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+            }
+            digitalWrite(comm->sspi.cs, HIGH);
+        }else{
+            res = BME68X_E_COM_FAIL;
+        }
+    }else{
+        res = BME68X_E_COM_FAIL;
     }
-    digitalWrite(comm->sspi.cs, HIGH);
-    delay(1);
-    return BME68X_OK;
+    Serial.printf("SSPIWrite res -> %i\n", res);
+    return res;
 }
 
 /// @brief Software Spi (Bit Banged) Write Method
@@ -416,17 +420,26 @@ int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void*
 int8_t BME680_SSPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
     Serial.printf("Reading SSPI -> reg Addr %u | len %u |\n", regAddr, len);
     BME_Interface_u *comm = (BME_Interface_u *)intf;
-    digitalWrite(comm->sspi.cs, LOW);
-    shiftOut(comm->sspi.mosi, comm->sspi.mosi, MSBFIRST, regAddr);
-    while(!digitalRead(comm->sspi.miso))
-        ;
-    for (uint32_t i = 0; i < len; i++){
-        buf[i] = shiftIn(comm->sspi.miso, comm->sspi.sck, MSBFIRST);
-        Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+    int8_t res = BME68X_OK;
+    if(intf){
+        comm = (BME_Interface_u *)intf;
+        if(comm->sspi.m_spi){
+            digitalWrite(comm->sspi.cs, LOW);
+            comm->sspi.m_spi->transfer(regAddr);
+            memset(buf, 0xFF, len);
+            for(uint32_t i = 0; i < len; i++){
+                buf[i] = comm->sspi.m_spi->transfer(0xFF);
+                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+            }
+            digitalWrite(comm->sspi.cs, HIGH);
+        }else{
+            res = BME68X_E_COM_FAIL;
+        }
+    }else{
+        res = BME68X_E_COM_FAIL;
     }
-    digitalWrite(comm->sspi.cs, HIGH);
-    delay(1);
-    return BME68X_OK;
+    Serial.printf("SSPIRead res -> %i\n", res);
+    return res;
 }
 
 /// @brief I2C Device read method to be passed to BME680 API
