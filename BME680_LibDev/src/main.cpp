@@ -14,6 +14,7 @@ void setup() {
   //bme = new BME680(10,&SPI);
   
   SSPI = new SSPIClass(10, 11, 12, 13, MSBFIRST, SPI_MODE0, SPI_CLOCK_DIV128);
+  Serial.printf("Reference to SSPI %i\n", SSPI);
   SSPI->begin();
   bme = new BME680(10, SSPI);
   

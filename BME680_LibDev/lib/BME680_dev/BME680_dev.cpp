@@ -32,6 +32,7 @@ BME680::BME680(uint8_t csPin, SPIClass* spi){
 BME680::BME680(uint8_t csPin, SSPIClass* sspi){
     interface.sspi.cs = csPin;
     interface.sspi.m_spi = sspi; //testing out if a null ptr is giving the issue here...
+    Serial.printf("Reference to SSPI %i\n", interface.sspi.m_spi);
     intfType = 0x04;
 }
 
