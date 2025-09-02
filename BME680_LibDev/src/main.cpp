@@ -4,6 +4,8 @@
 BME680* bme;
 SSPIClass *SSPI;
 
+//#define __USEHARDWARESPI__
+
 void setup() {
   Serial.begin(115200);
   Serial.printf("Starting Program %s\n", __FILE__);
@@ -11,12 +13,14 @@ void setup() {
   while(!Serial)
     ;
   Serial.printf("Initializing BME680 Chip\n");
-  //bme = new BME680(10,&SPI);
-  
-  SSPI = new SSPIClass(10, 11, 12, 13, MSBFIRST, SPI_MODE0, SPI_CLOCK_DIV128);
+#ifdef __USEHARDWARESPI__
+  bme = new BME680(10,&SPI);
+#else
+  SSPI = new SSPIClass(10, 11, 12, 13, MSBFIRST, SPI_MODE0, SPI_CLOCK_DIV2);
   Serial.printf("Reference to SSPI %i\n", SSPI);
   SSPI->begin();
   bme = new BME680(10, SSPI);
+#endif
   
   bme->begin();
   Serial.printf("BME Status -> %i\n", bme->getStatus());

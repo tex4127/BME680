@@ -32,7 +32,7 @@ BME680::BME680(uint8_t csPin, SPIClass* spi){
 BME680::BME680(uint8_t csPin, SSPIClass* sspi){
     interface.sspi.cs = csPin;
     interface.sspi.m_spi = sspi; //testing out if a null ptr is giving the issue here...
-    Serial.printf("Reference to SSPI %i\n", interface.sspi.m_spi);
+    //Serial.printf("Reference to SSPI %i\n", interface.sspi.m_spi);
     intfType = 0x04;
 }
 
@@ -55,7 +55,7 @@ void BME680::begin(){
         break;
         case 0x01:
         /*Start I2C Device*/
-        Serial.printf("Starting I2C Comms\n");
+        //Serial.printf("Starting I2C Comms\n");
         interface.i2c.m_i2c->begin();
         b_dev.intf = BME68X_I2C_INTF;
         b_dev.read = BME680_I2CRead;
@@ -67,7 +67,7 @@ void BME680::begin(){
         break;
         case 0x02:
         /*Start H_SPI Device*/
-        Serial.printf("Starting Hardware SPI Comms\n");
+        //Serial.printf("Starting Hardware SPI Comms\n");
         interface.spi.m_spi->begin();
         pinMode(interface.spi.cs, OUTPUT);
         digitalWrite(interface.spi.cs, HIGH);
@@ -85,7 +85,7 @@ void BME680::begin(){
         break;
         case 0x04:
         /*Start S_SPI Device*/
-        Serial.printf("Starting Software SPI Comms\n");
+        //Serial.printf("Starting Software SPI Comms\n");
         interface.sspi.m_spi->begin();
         digitalWrite(interface.sspi.cs, HIGH);
         delay(1);
@@ -399,7 +399,7 @@ int8_t BME680_SPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
 /// @param intf Pointer to digital communication object
 /// @return Error code (int8_t) bassed on communication state. 
 int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf){
-    Serial.printf("Writting SSPI -> reg Addr %u | len %u |\n", regAddr, len);
+    //Serial.printf("Writting SSPI -> reg Addr %u | len %u |\n", regAddr, len);
     BME_Interface_u *comm = (BME_Interface_u *)intf;
     int8_t res = BME68X_OK;
     if(intf){
@@ -409,7 +409,7 @@ int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void*
             comm->sspi.m_spi->transfer(regAddr);
             for (uint32_t i = 0; i < len; i++){
                 comm->sspi.m_spi->transfer(buf[i]);
-                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+                //Serial.printf("buf[%u] -> %u\n", i, buf[i]);
             }
             digitalWrite(comm->sspi.cs, HIGH);
         }else{
@@ -418,7 +418,7 @@ int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void*
     }else{
         res = BME68X_E_COM_FAIL;
     }
-    Serial.printf("SSPIWrite res -> %i\n", res);
+    //Serial.printf("SSPIWrite res -> %i\n", res);
     return res;
 }
 
@@ -429,7 +429,7 @@ int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void*
 /// @param intf Pointer to digital communication
 /// @return Error code (int8_t) bassed on communication state
 int8_t BME680_SSPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
-    Serial.printf("Reading SSPI -> reg Addr %u | len %u |\n", regAddr, len);
+    //Serial.printf("Reading SSPI -> reg Addr %u | len %u |\n", regAddr, len);
     BME_Interface_u *comm = (BME_Interface_u *)intf;
     int8_t res = BME68X_OK;
     if(intf){
@@ -440,7 +440,7 @@ int8_t BME680_SSPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
             memset(buf, 0xFF, len);
             for(uint32_t i = 0; i < len; i++){
                 buf[i] = comm->sspi.m_spi->transfer(0xFF);
-                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+                //Serial.printf("buf[%u] -> %u\n", i, buf[i]);
             }
             digitalWrite(comm->sspi.cs, HIGH);
         }else{
@@ -449,7 +449,7 @@ int8_t BME680_SSPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
     }else{
         res = BME68X_E_COM_FAIL;
     }
-    Serial.printf("SSPIRead res -> %i\n", res);
+    //Serial.printf("SSPIRead res -> %i\n", res);
     return res;
 }
 
