@@ -17,8 +17,7 @@
 SSPI::SSPI(uint8_t cs, uint8_t mosi, uint8_t miso, uint8_t sck, uint8_t dataOrder, uint8_t dataMode, uint32_t spiClockDiv) :
 cs(cs), mosi(mosi), miso(miso), dataOrder(dataOrder), dataMode(dataMode), spiClockDiv(spiClockDiv) {}
 */
-SSPIClass::SSPIClass(uint8_t csPin, uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin, uint8_t _dataOrder, uint8_t _dataMode, uint32_t _spiClockDiv){
-    cs = csPin;
+SSPIClass::SSPIClass(uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin, uint8_t _dataOrder, uint8_t _dataMode, uint32_t _spiClockDiv){
     mosi = mosiPin;
     miso = misoPin;
     sck = sckPin;
@@ -33,7 +32,6 @@ void SSPIClass::begin(){
     if(_begun){
         return;
     }
-    pinMode(cs, OUTPUT);
     pinMode(mosi, OUTPUT);
     pinMode(miso, INPUT);
     pinMode(sck, OUTPUT);
@@ -48,7 +46,6 @@ void SSPIClass::begin(){
 /// @brief Releases all pins attached to this device
 void SSPIClass::end(){
     if(_begun){
-        pinMode(cs, INPUT);
         pinMode(mosi, INPUT);
         pinMode(miso, INPUT);
         pinMode(sck, INPUT);

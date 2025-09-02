@@ -19,7 +19,7 @@
 
 class SSPIClass{ //: public SPIClass{
     public:
-        SSPIClass(uint8_t csPin, uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin, uint8_t _dataOrder = MSBFIRST, uint8_t _dataMode = SPI_MODE0, uint32_t _spiClockDiv = SPI_CLOCK_DIV128);
+        SSPIClass(uint8_t mosiPin, uint8_t misoPin, uint8_t sckPin, uint8_t _dataOrder = MSBFIRST, uint8_t _dataMode = SPI_MODE0, uint32_t _spiClockDiv = SPI_CLOCK_DIV128);
         void begin();
         void end();
         /// @brief Transfers 1 byte of data in and 1 byte of data out 
