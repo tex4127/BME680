@@ -41,7 +41,7 @@ class SSPIClass{ //: public SPIClass{
                 (word&0x80) >> 7;
             }
 			uint8_t bv = 0;
-            uint8_t d = fDelay;            //Delay divider value divded by 2, we perform a read and a write, each delay must be half the total delay
+            uint8_t d = fDelay>>1;            //Delay divider value divded by 2, we perform a read and a write, each delay must be half the total delay
             uint8_t cpst = cpol ? HIGH : LOW;    //Copy of cpolarity to trigger change in clock states
             for (uint8_t bsh = 0; bsh < 8; bsh++){
                 //Shift Clock State based on Clock Phase
