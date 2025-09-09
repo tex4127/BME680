@@ -35,7 +35,6 @@ void SSPIClass::begin(){
     pinMode(mosi, OUTPUT);
     pinMode(miso, INPUT);
     pinMode(sck, OUTPUT);
-    digitalWrite(cs, HIGH);
 	digitalWrite(mosi, HIGH);
     //We need to handle our SPI MODE | CPOL and CPHA
     setDataMode(dataMode);
