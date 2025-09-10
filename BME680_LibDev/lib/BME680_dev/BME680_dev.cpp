@@ -296,7 +296,7 @@ uint32_t BME680::getUID(){
 /// @param _mode Current operating mode
 /// @return Time in microSeconds for measurement duration
 uint32_t BME680::getMeasurementTime(BME680_Mode_e _mode){
-    if(_mode = BME680_Mode_e::BME680_MODE_SLEEP){
+    if(_mode == BME680_Mode_e::BME680_MODE_SLEEP){
         _mode = b_mode;
     }
     return bme68x_get_meas_dur((uint8_t)_mode, &b_conf, &b_dev);
