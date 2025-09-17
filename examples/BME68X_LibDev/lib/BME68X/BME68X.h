@@ -39,6 +39,12 @@
 #ifndef __BME68X_HH__
 #define __BME68X_HH__
 
+#include "Arduino.h"
+#include "Wire.h"
+#include "SPI.h"
+#include "../SoftwareSPI/SoftwareSPI.h"
+#include "../BitBangSPI/BitBangSPI.h"
+
 /********************************************************/
 /*! @name  BME68X Macros                                */
 /********************************************************/
@@ -192,8 +198,275 @@
 #define BME68X_REGISTER_PAR_G3              0xEE
 //Gas Measurement Registers
 #define BME68X_REGISTER_HEAT_RANGE          0x02    //[5:4]
-#define BME68X_REGISTER_HEAT_VAL            0x00
+#define BME68X_REGISTER_HEAT_VAL            0x00    
 
+/********************************************************/
+/*  BMEXXX Interface Union                              */
+/********************************************************/
+
+#ifndef __BME_INTERFACE_UNION__
+#define __BME_INTERFACE_UNION__
+typedef union{
+    struct{
+        TwoWire *m_i2c;
+        uint8_t addr;
+    }i2c;
+    struct{
+        SPIClass* m_spi;
+        uint8_t cs;
+    }spi;
+    struct{
+        SSPIClass *m_spi;
+        uint8_t cs;
+    }sspi;
+    struct{
+        BBSPIClass *m_spi;
+        uint8_t cs;
+    }bbspi;
+}BME_Interface_u;
+
+#endif
+
+/********************************************************/
+/*  BMEXXX Interface Methods                            */
+/********************************************************/
+
+#ifndef BME_RET_VALUE_TYPE
+#define BME_RET_VALUE_TYPE               int8_t
+#endif
+
+#ifndef BME_RET_VALUES
+#define BME_RET_VALUES
+#define BME_STATUS_OK                   0
+#define BME_E_NULL_PTR                  -1
+#define BME_E_COMM_FAIL                 -2
+#define BME_E_INVALID_LEN               -3
+#define BME_E_DEV_NOT_FOUND             -4
+#define BME_E_SLEEP_MODE_FAIL           -5
+#define BME_E_NVM_COPY_FAIL             -6
+#define BME_W_INVALID_ODR               1
+#endif
+
+typedef void (* BME68X_DELAY_FUNC)(uint32_t period, void *intrPtr);
+typedef BME_RET_VALUE_TYPE (* BME68X_INTF_WRITE)(uint8_t, const uint8_t*, uint32_t, void*);
+typedef BME_RET_VALUE_TYPE (* BME68X_INTF_READ)(uint8_t, uint8_t*, uint32_t, void*);
+
+
+#ifndef BME68X_API_FUNTIONS
+#define BME68X_API_FUNCTIONS
+//Delay/Idle Function
+void BME280_delayUs(uint32_t period, void *intfPtr);
+//Hardware SPI
+int8_t BME280_SPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME280_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void* intfPtr);
+//Software SPI
+int8_t BME280_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME280_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
+//BitBang SPI
+int8_t BME280_BBSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME280_BBSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
+//Hardware I2C
+int8_t BME280_I2CWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME280_I2CRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
+#endif
+
+/********************************************************/
+/*! @name  BME280 Data Structures                       */
+/********************************************************/
+
+/// @brief Structure to store all Calibration Coefficients for the BME68X chip set
+typedef struct {
+    /*! Calibration coefficient for the temperature sensor */
+    uint16_t par_t1;
+    /*! Calibration coefficient for the temperature sensor */
+    int16_t par_t2;
+    /*! Calibration coefficient for the temperature sensor */
+    int8_t par_t3;
+    /*! Calibration coefficient for the pressure sensor */
+    uint16_t par_p1;
+    /*! Calibration coefficient for the pressure sensor */
+    int16_t par_p2;
+    /*! Calibration coefficient for the pressure sensor */
+    int8_t par_p3;
+    /*! Calibration coefficient for the pressure sensor */
+    int16_t par_p4;
+    /*! Calibration coefficient for the pressure sensor */
+    int16_t par_p5;
+    /*! Calibration coefficient for the pressure sensor */
+    int8_t par_p6;
+    /*! Calibration coefficient for the pressure sensor */
+    int8_t par_p7;
+    /*! Calibration coefficient for the pressure sensor */
+    int16_t par_p8;
+    /*! Calibration coefficient for the pressure sensor */
+    int16_t par_p9;
+    /*! Calibration coefficient for the pressure sensor */
+    uint8_t par_p10;
+    /*! Calibration coefficient for the humidity sensor */
+    uint16_t par_h1;
+    /*! Calibration coefficient for the humidity sensor */
+    uint16_t par_h2;
+    /*! Calibration coefficient for the humidity sensor */
+    int8_t par_h3;
+    /*! Calibration coefficient for the humidity sensor */
+    int8_t par_h4;
+    /*! Calibration coefficient for the humidity sensor */
+    int8_t par_h5;
+    /*! Calibration coefficient for the humidity sensor */
+    uint8_t par_h6;
+    /*! Calibration coefficient for the humidity sensor */
+    int8_t par_h7;
+    /*! Calibration coefficient for the gas sensor */
+    int8_t par_gh1;
+    /*! Calibration coefficient for the gas sensor */
+    int16_t par_gh2;
+    /*! Calibration coefficient for the gas sensor */
+    int8_t par_gh3;
+    /*! Variable to store the intermediate temperature coefficient */
+    float t_fine;
+    /*! Heater resistance range coefficient */
+    uint8_t res_heat_range;
+    /*! Heater resistance value coefficient */
+    int8_t res_heat_val;
+    /*! Gas resistance range switching error coefficient */
+    int8_t range_sw_err;
+} BME68X_Calib_t;
+
+/*!
+ *  @brief BME28X Configuration Structure
+ *  this structure stores the settings for the sensor
+ *  Oversampling for each sensor measurement
+ *  Standby time (odr) for idelt time between measurments in normal mode
+ *  Mode of operation (sleep, forced, normal)
+ */
+typedef struct{
+    /*! Humidity oversampling | Set to bits [2:0] of ctrl_hum(0xF2)
+     * 000 -> Skipped, sets value to 100 on chip
+     * 001 -> Oversampling x1
+     * 010 -> Oversampling x2
+     * 011 -> Oversampling x4
+     * 100 -> Oversampling x8
+     * 101 -> Oversampling x16
+     */
+    uint8_t os_hum;
+    /*! Humidity oversampling | Set to bits [7:5] of ctrl_meas(0xF4)
+     * 000 -> Skipped, sets value to 100 on chip
+     * 001 -> Oversampling x1
+     * 010 -> Oversampling x2
+     * 011 -> Oversampling x4
+     * 100 -> Oversampling x8
+     * 101 -> Oversampling x16
+     */
+    uint8_t os_temp;
+    /*! Humidity oversampling | Set to bits [4:2] of ctrl_meas(0xF4)
+     * 000 -> Skipped, sets value to 100 on chip
+     * 001 -> Oversampling x1
+     * 010 -> Oversampling x2
+     * 011 -> Oversampling x4
+     * 100 -> Oversampling x8
+     * 101 -> Oversampling x16
+     */
+    uint8_t os_press;
+    /*! Filter coefficient | Set to bits [4:2] of config(0xF5)
+     * 000 -> Filter Off
+     * 001 -> Filter Coeff x2
+     * 010 -> Filter Coeff x4
+     * 011 -> Filter Coeff x8
+     * 100 -> Filter Coeff x16
+     */
+    uint8_t filter;
+    /*! Standby Time (t_sb) | Set to bits [7:5] of config(0xF5)
+     * 000 -> 0.5ms
+     * 001 -> 62.5ms
+     * 010 -> 125ms
+     * 011 -> 250ms
+     * 100 -> 500ms
+     * 101 -> 1000ms
+     * 110 -> 10ms
+     * 111 -> 20ms
+     */
+    uint8_t odr;
+    /*! Sensor Mode | Set to bits [1:0] of ctrl_meas(0xF4)
+     * 00 -> Sleep mode
+     * 01 -> Forced Mode
+     * 10 -> Forced Mode
+     * 11 -> Normal Mode
+     */
+    uint8_t mode;
+} BME68X_Config_t;
+
+/// @brief BME68X Heater Config Structure
+typedef struct{
+    uint8_t enable;
+    uint16_t heatr_temp;
+    uint16_t heatr_dur;
+    uint16_t *heatr_temp_prof;
+    uint16_t *heatr_dur_prof;
+    uint8_t profile_len;
+    uint16_t shared_heatr_dur;
+} BME68X_HeaterConfig_t;
+
+typedef struct{
+    float temperature;
+    float pressure;
+    float humidity;
+    float resistance;
+} BME68X_Data_t;
+
+
+class BME68X{
+    public:
+    void begin(void);
+    bool begun(void);
+    uint8_t getChipID(void);
+    void setConfig(void);
+    const BME68X_Config_t getConfig();
+
+    int8_t readSensor(void);
+    const BME68X_Data_t getSensorData(void);
+    uint32_t getMeasurementTime(void); 
+
+    protected:
+    virtual void init() = 0;
+    int8_t softReset(void);
+    int8_t getCalibData(void);
+    //int8_t setSensorMode(BME68X_Mode_t _mode);
+    int8_t putSensorToSleep(void);
+    int32_t compTemperature(int32_t);
+    uint32_t compPressure(int32_t);
+    uint32_t compHumidity(int32_t);
+
+
+    BME68X_INTF_WRITE write;
+    BME68X_INTF_READ read;
+    BME68X_DELAY_FUNC delay_us;
+    bool _begun = false;
+    BME_Interface_u interface;
+
+    uint8_t intfType = 0x00;        //0x00 == NONE | 0x01 == I2C | 0x02 == HSPI | 0x04 == SSPI | 0x08 == BBSPI
+    uint8_t ChipID;
+    BME68X_Calib_t sensorCalib;
+    BME68X_Config_t sensorConfig;
+};
+
+class BME680 : public BME68X{
+    public:
+        BME680(uint8_t addr, TwoWire *wire = &Wire);
+        BME680(uint8_t addr, SPIClass *spi = &SPI);
+        BME680(uint8_t cs, SSPIClass *sspi);
+        BME680(uint8_t cs, BBSPIClass *bbspi);
+    private:
+};
+
+class BME688 : public BME68X{
+    public:
+        BME688(uint8_t addr, TwoWire *wire = &Wire);
+        BME688(uint8_t addr, SPIClass *spi = &SPI);
+        BME688(uint8_t cs, SSPIClass *sspi);
+        BME688(uint8_t cs, BBSPIClass *bbspi);
+    private:
+
+};
 
 
 
