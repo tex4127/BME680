@@ -4,7 +4,7 @@
 BME680* bme;
 SSPIClass *SSPI;
 
-//#define __USEHARDWARESPI__
+#define __USEHARDWARESPI__
 
 void setup() {
   Serial.begin(115200);
@@ -17,8 +17,8 @@ void setup() {
   bme = new BME680(10,&SPI);
 #else
   SSPI = new SSPIClass(11, 12, 13, MSBFIRST, SPI_MODE0, SPI_CLOCK_DIV2);
-  Serial.printf("Reference to SSPI %i\n", SSPI);
-  SSPI->begin();
+  Serial.printf("Reference to SSPI %p\n", SSPI);
+  //SSPI->begin();
   bme = new BME680(10, SSPI);
 #endif
   
@@ -30,7 +30,8 @@ void setup() {
     while(1)
       ; 
   }
-
+  while(1)
+      ; 
   Serial.printf("Configuring BME680\n");
   bme->setSensor_OS(BME680_OS_16X, BME680_OS_16X, BME680_OS_16X);
   bme->setHeaterProfile(300, 100);
