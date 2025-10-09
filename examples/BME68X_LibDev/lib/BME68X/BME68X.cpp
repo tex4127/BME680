@@ -43,6 +43,73 @@
 //
 //***********************************************************//
 
+void BME68X::init(){
+    int8_t rslt = BME_STATUS_OK;
+    rslt = read(BME68X_REGISTER_CHIPID, &ChipID, 1, &interface);
+    if(BME_STATUS_OK != rslt){
+        _begun = false;
+        return;
+    }
+    if(0x60 != ChipID){
+        _begun = false;
+        return;
+    }
+    rslt = softReset();
+    uint8_t regAddr = BME68X_REGISTER_STATUS;
+    uint8_t regData = 0x01;
+    read(regAddr, &regData, 1, &interface);
+
+    
+}
+
+/// @brief Soft Resets the sensor
+/// @return status of the chip 
+int8_t BME68X::softReset(){
+    uint8_t regAddr = BME68X_REGISTER_SOFTRESET;
+    uint8_t regData = 0xB6; //Soft Reset Command
+    uint8_t regStatus = 0;
+    uint8_t tryRun = 5;
+    int8_t rslt = write(regAddr, &regData, 1, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    /* Might want to add a while loop to ensure reset has occured */
+    delay_us(2000, &interface);
+    if(intfType == 0x01){
+        return rslt;
+    }
+    /* rslt = get_mem_page() It should reset to 0x00*/
+    return rslt;
+}
+
+int8_t BME68X::getCalibData(){
+    return 0;
+}
+
+
+int8_t BME68X::getMemPage(){
+    int8_t rslt;
+    uint8_t regData;
+    rslt = read(BME68X_REGISTER_MEM_PAGE, &regData, 1, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    memPage = regData & 0x10; //memory page mask
+}
+
+int8_t BME68X::putSensorToSleep(){
+    int8_t rslt;
+    uint8_t curMode;
+    rslt = read(BME68X_REGISTER_CONTROL , &curMode, 1, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    rslt = softReset();
+    return rslt;
+}
+
+
+
 //***********************************************************//
 //
 //  BME680 Specific Methods
@@ -75,6 +142,7 @@ BME680::BME680(uint8_t cs, BBSPIClass *bbspi){
 //
 //***********************************************************//
 
+/*
 BME688::BME688(uint8_t addr, TwoWire *wire){
     interface.i2c = {wire, addr};
     intfType = 0x01;
@@ -94,6 +162,7 @@ BME688::BME688(uint8_t cs, BBSPIClass *bbspi){
     interface.bbspi = {bbspi, cs};
     intfType = 0x08;
 }
+*/
 
 //***********************************************************//
 //

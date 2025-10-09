@@ -57,6 +57,16 @@
 /*! @name BME280 Statuses                               */
 /********************************************************/
 
+#define BME68X_REGISTER_CHIPID      0xD0
+#define BME68X_REGISTER_STATUS      0x73
+#define BME68X_REGISTER_VARIANTID   0xF0
+#define BME68X_REGISTER_CONTROL     0x72
+#define BME68X_REGISTER_SOFTRESET   0xE0
+#define BME68X_REGISTER_MEM_PAGE    0xF3
+
+#define BME68X_STATUS_IM_UPDATE     0x01
+
+
 /********************************************************/
 /*! @name  BME280 Data Registers                        */
 /********************************************************/
@@ -427,9 +437,11 @@ class BME68X{
     uint32_t getMeasurementTime(void); 
 
     protected:
-    virtual void init() = 0;
+    virtual void init();
     int8_t softReset(void);
     int8_t getCalibData(void);
+    int8_t getMemPage(void);
+    int8_t setMemPage(uint8_t regAddr);
     //int8_t setSensorMode(BME68X_Mode_t _mode);
     int8_t putSensorToSleep(void);
     int32_t compTemperature(int32_t);
@@ -447,6 +459,7 @@ class BME68X{
     uint8_t ChipID;
     BME68X_Calib_t sensorCalib;
     BME68X_Config_t sensorConfig;
+    uint8_t memPage = 0;
 };
 
 class BME680 : public BME68X{
@@ -455,19 +468,24 @@ class BME680 : public BME68X{
         BME680(uint8_t addr, SPIClass *spi = &SPI);
         BME680(uint8_t cs, SSPIClass *sspi);
         BME680(uint8_t cs, BBSPIClass *bbspi);
+    protected:
+
     private:
 };
 
+/*
 class BME688 : public BME68X{
     public:
         BME688(uint8_t addr, TwoWire *wire = &Wire);
         BME688(uint8_t addr, SPIClass *spi = &SPI);
         BME688(uint8_t cs, SSPIClass *sspi);
         BME688(uint8_t cs, BBSPIClass *bbspi);
+    protected:
+
     private:
 
 };
-
+*/
 
 
 #endif

@@ -8,6 +8,8 @@
 
 #include "bme68x/bme68x.h"
 
+#define __DEBUG__
+
 #define BME680_Data bme68x_data
 //#define BME68X_ERROR
 //#define BME68X_WARNING

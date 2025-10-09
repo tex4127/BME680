@@ -84,7 +84,7 @@ void BME680::begin(){
         case 0x04:
         /*Start S_SPI Device*/
         //Serial.printf("Starting Software SPI Comms\n");
-        Serial.printf("Starting SSPI Object\n");
+        //Serial.printf("Starting SSPI Object\n");
         interface.sspi.m_spi->begin();
         digitalWrite(interface.sspi.cs, HIGH); delay(1);
         digitalWrite(interface.sspi.cs, LOW); delay(1);
@@ -336,27 +336,38 @@ void BME680_delayUs(uint32_t us, void* intf){
 /// @param len Length of data buffer to be written
 /// @param intf Pointer to digital communication object
 /// @return Error code (int8_t) bassed on communication state. 
-int8_t BME680_SPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf){
-    //Serial.printf("Writting SPI -> reg Addr %u | len %u |\n", regAddr, len);
+int8_t BME680_SPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
+    #ifdef __DEBUG__
+    Serial.printf("\nSPIWrite(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
+#endif
     BME_Interface_u *comm = NULL;
-    int8_t res = BME68X_OK;
-    if(intf){
-        comm = (BME_Interface_u *)intf;
+    int8_t rslt = BME68X_OK;
+    if(intfPtr){
+        comm = (BME_Interface_u *)intfPtr;
         if(comm->spi.m_spi){
             digitalWrite(comm->spi.cs, LOW);
-            comm->spi.m_spi->transfer(regAddr);
+            comm->spi.m_spi->transfer(regAddr & ~0x80); //For all SPI Writes we must set bit 7 low
+#ifdef __DEBUG__
+            Serial.printf("\n\tregAddr -> %02x Data -> {", regAddr);
+#endif
             for (uint32_t i = 0; i < len; i++){
-                comm->spi.m_spi->transfer(buf[i]);
-                //Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+                comm->spi.m_spi->transfer(regData[i]);
+#ifdef __DEBUG__
+                Serial.printf("%02x(%03u),", regData[i], regData[i]);
+#endif
             }
             digitalWrite(comm->spi.cs, HIGH);
-        }else{
-            res = BME68X_E_COM_FAIL;
+#ifdef __DEBUG__
+            Serial.printf("}\n");
+#endif
+        }
+        else{
+            rslt = BME68X_E_COM_FAIL;
         }
     }else{
-        res = BME68X_E_COM_FAIL;
+        rslt = BME68X_E_COM_FAIL;
     }
-    return res;
+    return rslt;
 }
 
 /// @brief Hardware SPI Read Method
@@ -365,28 +376,38 @@ int8_t BME680_SPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* 
 /// @param len Length of data Buffer
 /// @param intf Pointer to digital communication
 /// @return Error code (int8_t) bassed on communication state
-int8_t BME680_SPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
-    Serial.printf("Reading SPI -> reg Addr %u | len %u |\n", regAddr, len);
-    BME_Interface_u *comm= NULL;
-    int8_t res = BME68X_OK;
-    if(intf){
-        comm = (BME_Interface_u *)intf;
+int8_t BME680_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
+    #ifdef __DEBUG__
+    Serial.printf("\nSPIRead(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
+#endif
+    BME_Interface_u *comm = NULL;
+    int8_t rslt = BME68X_OK;
+    if(intfPtr){
+        comm = (BME_Interface_u *)intfPtr;
         if(comm->spi.m_spi){
             digitalWrite(comm->spi.cs, LOW);
-            comm->spi.m_spi->transfer(regAddr);
-            memset(buf, 0xFF, len);
-            for(uint32_t i = 0; i < len; i++){
-                buf[i] = comm->spi.m_spi->transfer(0xFF);
-                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+            comm->spi.m_spi->transfer(regAddr | 0x80); //for all SPI Reads we must force bit 7 high
+#ifdef __DEBUG__
+            Serial.printf("\n\tregAddr -> %02x Data -> {", regAddr);
+#endif
+            memset(regData, 0xFF, len); //Reset our data
+            for(uint32_t i = 0 ; i < len; i++){
+                regData[i] = comm->spi.m_spi->transfer(0xFF);
+#ifdef __DEBUG__
+                Serial.printf("%02x(%03u),", regData[i], regData[i]);
+#endif
             }
             digitalWrite(comm->spi.cs, HIGH);
+#ifdef __DEBUG__
+            Serial.printf("}\n");
+#endif
         }else{
-            res = BME68X_E_COM_FAIL;
+            rslt = BME68X_E_COM_FAIL;
         }
-    }else{
-        res = BME68X_E_COM_FAIL;
+    } else{
+        rslt = BME68X_E_COM_FAIL;
     }
-    return res;
+    return rslt;
 }
 
 /// @brief Software Spi (Bit Banged) Write Method
@@ -395,28 +416,38 @@ int8_t BME680_SPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
 /// @param len Length of data buffer to be written
 /// @param intf Pointer to digital communication object
 /// @return Error code (int8_t) bassed on communication state. 
-int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void* intf){
-    Serial.printf("Writting SSPI -> reg Addr %u | len %u |\n", regAddr, len);
-    BME_Interface_u *comm = (BME_Interface_u *)intf;
-    int8_t res = BME68X_OK;
-    if(intf){
-        comm = (BME_Interface_u *)intf;
+int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
+    #ifdef __DEBUG__
+    Serial.printf("\nSSPIWrite(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
+#endif
+    BME_Interface_u *comm = NULL;
+    int8_t rslt = BME68X_OK;
+    if(intfPtr){
+        comm = (BME_Interface_u *)intfPtr;
         if(comm->sspi.m_spi){
             digitalWrite(comm->sspi.cs, LOW);
             comm->sspi.m_spi->transfer(regAddr & ~0x80);
-            for (uint32_t i = 0; i < len; i++){
-                comm->sspi.m_spi->transfer(buf[i]);
-                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+#ifdef __DEBUG__
+            Serial.printf("\n\tregAddr -> %02x Data -> {");
+#endif
+            for (uint32_t i = 0; i < len; i ++){
+#ifdef __DEBUG__
+                Serial.printf("%02x(%03u),", regData[i], regData[i]);
+#endif
+                comm->sspi.m_spi->transfer(regData[i]);
             }
             digitalWrite(comm->sspi.cs, HIGH);
-        }else{
-            res = BME68X_E_COM_FAIL;
+#ifdef __DEBUG__
+            Serial.printf("}");
+#endif
+        }
+        else{
+            rslt = BME68X_E_COM_FAIL;
         }
     }else{
-        res = BME68X_E_COM_FAIL;
+        rslt = BME68X_E_COM_FAIL;
     }
-    Serial.printf("SSPIWrite res -> %i\n", res);
-    return res;
+    return rslt;
 }
 
 /// @brief Software Spi (Bit Banged) Write Method
@@ -425,29 +456,38 @@ int8_t BME680_SSPIWrite(uint8_t regAddr, const uint8_t* buf, uint32_t len, void*
 /// @param len Length of data Buffer
 /// @param intf Pointer to digital communication
 /// @return Error code (int8_t) bassed on communication state
-int8_t BME680_SSPIRead(uint8_t regAddr, uint8_t* buf, uint32_t len, void* intf){
-    Serial.printf("Reading SSPI -> reg Addr %u | len %u |\n", regAddr, len);
-    BME_Interface_u *comm = (BME_Interface_u *)intf;
-    int8_t res = BME68X_OK;
-    if(intf){
-        comm = (BME_Interface_u *)intf;
+int8_t BME680_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
+    #ifdef __DEBUG__
+    Serial.printf("\nSSPIRead(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
+#endif
+    BME_Interface_u *comm = NULL;
+    int8_t rslt = BME68X_OK;
+    if(intfPtr){
+        comm = (BME_Interface_u *)intfPtr;
         if(comm->sspi.m_spi){
             digitalWrite(comm->sspi.cs, LOW);
             comm->sspi.m_spi->transfer(regAddr | 0x80);
-            memset(buf, 0xFF, len);
-            for(uint32_t i = 0; i < len; i++){
-                buf[i] = comm->sspi.m_spi->transfer(0xFF);
-                Serial.printf("buf[%u] -> %u\n", i, buf[i]);
+#ifdef __DEBUG__
+            Serial.printf("\n\tregAddr -> %02x Data -> {", regAddr);
+#endif
+            memset(regData, 0xFF, len);
+            for (uint32_t i = 0; i < len; i++){
+                regData[i] = comm->sspi.m_spi->transfer(0xFF);
+#ifdef __DEBUG__
+                Serial.printf("%02x(%u),", regData[i]);
+#endif
             }
             digitalWrite(comm->sspi.cs, HIGH);
+#ifdef __DEBUG__
+            Serial.printf("}");
+#endif
         }else{
-            res = BME68X_E_COM_FAIL;
+            rslt = BME68X_E_NULL_PTR;
         }
     }else{
-        res = BME68X_E_COM_FAIL;
+        rslt = BME68X_E_NULL_PTR;
     }
-    //Serial.printf("SSPIRead res -> %i\n", res);
-    return res;
+    return rslt;
 }
 
 /// @brief I2C Device read method to be passed to BME680 API

@@ -4,7 +4,7 @@
 BME680* bme;
 SSPIClass *SSPI;
 
-#define __USEHARDWARESPI__
+//#define __USEHARDWARESPI__
 
 void setup() {
   Serial.begin(115200);
@@ -16,7 +16,7 @@ void setup() {
 #ifdef __USEHARDWARESPI__
   bme = new BME680(10,&SPI);
 #else
-  SSPI = new SSPIClass(11, 12, 13, MSBFIRST, SPI_MODE0, SPI_CLOCK_DIV2);
+  SSPI = new SSPIClass(11, 12, 13, MSBFIRST, SPI_MODE0, SPI_CLOCK_DIV128);
   Serial.printf("Reference to SSPI %p\n", SSPI);
   //SSPI->begin();
   bme = new BME680(10, SSPI);
