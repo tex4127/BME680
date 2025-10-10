@@ -39,6 +39,8 @@
 #ifndef __BME68X_HH__
 #define __BME68X_HH__
 
+#define __DEBUG__
+
 #include "Arduino.h"
 #include "Wire.h"
 #include "SPI.h"
@@ -48,6 +50,14 @@
 /********************************************************/
 /*! @name  BME68X Macros                                */
 /********************************************************/
+
+#define BME68X_16BIT_CONCAT(msb, lsb)               (((uint16_t)msb << 8)| \
+                                                    (uint16_t)lsb)
+
+#define BME68X_12BIT_LOWER_CONCAT(msb, lsb)         (uint16_t)(((uint16_t)msb << 4) | \
+                                                    ((uint16_t)lsb & 0x0F))
+#define BME68X_12BIT_UPPER_CONCAT(msb, lsb)         (uint16_t)(((uint16_t)msb << 4) | \
+                                                    ((uint16_t)lsb >> 4))
 
 /********************************************************/
 /*! @name BME68X Addresses                              */
@@ -106,10 +116,17 @@
  *                  |-----------------------    Duplicate Registers start at 0x3E   ------------------------------------------------|
  */ 
 
-#define BME68X_REGISTER_PAR_TP          0xE9
+#define BME68X_LEN_COEFF_ALL                42
+#define BME68X_LEN_COEFF_1                  23
+#define BME68X_LEN_COEFF_2                  14
+#define BME68X_LEN_COEFF_3                  5
 
-//Temperature Calibration Registers
-#define BME68X_REGISTER_CALIB_TEMP_START    0xE9
+#define BME68X_REGISTER_COEFF_1             0x8A
+#define BME68X_REGISTER_COEFF_2             0xE1
+#define BME68X_REGSITER_COEFF_3             0x00
+
+//Temperature Calibration RegistersA
+#define BME68X_REGISTER_CALIB_TEMP_START    0x8A    //Based on Bosch API, this is where temp coeffs start
 #define BME68X_REGISTER_PAR_T1              0xE9    //uint16_t
 #define BME68X_REGISTER_PAR_T1_LSB          0xE9    //[7:0]
 #define BME68X_REGISTER_PAR_T1_MSB          0xEA    //[15:8]
@@ -136,16 +153,15 @@
 
 //Pressure Calibration Registers
 #define BME68X_REGISTER_CALIB_PRESS_START   0x8E
-#define BME68X_REGISTER_PAR_P1              0x8E    //uint16_t
-#define BME68X_REGISTER_PAR_P1_LSB          0x8E    //[7:0]
-#define BME68X_REGISTER_PAR_P1_MSB          0x8F    //[15:8]
-#define BME68X_REGISTER_PAR_P2              0x90    //uint16_t
-#define BME68X_REGISTER_PAR_P2_LSB          0x90    //[7:0]
-#define BME68X_REGISTER_PAR_P2_MSB          0x91    //[15:8]   
-#define BME68X_REGISTER_PAR_P2              0x92    //uint8_t
-#define BME68X_REGISTER_PAR_P3              0x94    //uint16_t
-#define BME68X_REGISTER_PAR_P3_LSB          0x94    //[7:0]
-#define BME68X_REGISTER_PAR_P3_MSB          0x95    //[15:8]
+#define BME68X_REGISTER_PAR_P1              0x8E
+#define BME68X_REGISTER_PAR_P1_LSB          0x8E
+#define BME68X_REGISTER_PAR_P1_MSB          0x8F
+#define BME68X_REGISTER_PAR_P2              0x90 //Had this as 0x92 as well?
+#define BME68X_REGISTER_PAR_P2_LSB          0x90
+#define BME68X_REGISTER_PAR_P2_MSB          0x91
+#define BME68X_REGISTER_PAR_P3              0x94
+#define BME68X_REGISTER_PAR_P3_LSB          0x94
+#define BME68X_REGISTER_PAR_P3_MSB          0x95
 #define BME68X_REGISTER_PAR_P4              0x96    
 #define BME68X_REGISTER_PAR_P4_LSB          0x96
 #define BME68X_REGISTER_PAR_P5_MSB          0x97

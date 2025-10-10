@@ -45,6 +45,9 @@
 
 /// @brief Begin method, Starts interface comms and initialized chip
 void BME68X::begin(){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::begin()\n");
+#endif
     memset(&sensorConfig, 0, sizeof(BME68X_Config_t));
     switch (intfType){
         case 0x01:
@@ -98,26 +101,48 @@ bool BME68X::begun(){
 /// @brief Sensor Initializer
 /// @return Sensor Status
 int8_t BME68X::init(){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::init()\n");
+#endif
     int8_t rslt = BME_STATUS_OK;
     softReset();
     //Get Chip ID
+#ifdef __DEBUG__
+    Serial.printf("Get ChipID\n");
+#endif
     rslt = read(BME68X_REGISTER_CHIPID, &ChipID, 1, &interface);
     if(BME_STATUS_OK != rslt || BME68X_CHIP_ID != ChipID){
         return BME_E_DEV_NOT_FOUND;
     }
+#ifdef __DEBUG__
+    Serial.printf("BME68X::ChipID = %02X\n", ChipID);
+#endif
+    //Get Variant ID
+#ifdef __DEBUG__
+    Serial.printf("Get Variant ID\n");
+#endif
     rslt = read(BME68X_REGISTER_VARIANTID, &VariantID, 1, &interface);
     if(BME_STATUS_OK != rslt){
         return rslt;
-    } 
+    }
+#ifdef __DEBUG__
+    Serial.printf("BME68X::VariantID = %02X\n", VariantID);
+#endif
+    //Get Calibration Data
+    rslt = getCalibData(); 
+    return rslt;
 }
 
 /// @brief Soft Resets the sensor
 /// @return status of the chip 
 int8_t BME68X::softReset(){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::softReset()\n");
+#endif
     uint8_t regAddr = BME68X_REGISTER_SOFTRESET;
     uint8_t regData = 0xB6; //Soft Reset Command
-    uint8_t regStatus = 0;
-    uint8_t tryRun = 5;
+    //uint8_t regStatus = 0;
+    //uint8_t tryRun = 5;
     int8_t rslt = write(regAddr, &regData, 1, &interface);
     if(BME_STATUS_OK != rslt){
         return rslt;
@@ -131,13 +156,67 @@ int8_t BME68X::softReset(){
     return rslt;
 }
 
+/// @brief Read the sensor calibration data
+/// @return Sensor Status
 int8_t BME68X::getCalibData(){
-    return 0;
+#ifdef __DEBUG__
+    Serial.printf("BME68X::getCalibData()\n");
+#endif
+    int rslt;
+    uint8_t regData[BME68X_LEN_COEFF_ALL];
+    //Get our coeffs
+    rslt = read(BME68X_REGISTER_COEFF_1, regData, BME68X_LEN_COEFF_1, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    rslt = read(BME68X_REGISTER_COEFF_2, &regData[BME68X_LEN_COEFF_1], BME68X_LEN_COEFF_2, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    rslt = read(BME68X_REGSITER_COEFF_3, &regData[BME68X_LEN_COEFF_1 + BME68X_LEN_COEFF_2], BME68X_LEN_COEFF_3, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    //Temp Coeffs
+    sensorCalib.par_t1 = (uint16_t)BME68X_16BIT_CONCAT(regData[32], regData[31]);
+    sensorCalib.par_t2 = (int16_t)BME68X_16BIT_CONCAT(regData[1], regData[0]);
+    sensorCalib.par_t3 = (int8_t)regData[2];
+    //Pressure Coeffs
+    sensorCalib.par_p1 = (uint16_t)BME68X_16BIT_CONCAT(regData[5], regData[4]);
+    sensorCalib.par_p2 = (int16_t)BME68X_16BIT_CONCAT(regData[7], regData[6]);
+    sensorCalib.par_p3 = (int8_t)regData[8];
+    sensorCalib.par_p4 = (int16_t)BME68X_16BIT_CONCAT(regData[11], regData[10]);
+    sensorCalib.par_p5 = (int16_t)BME68X_16BIT_CONCAT(regData[13], regData[12]);
+    sensorCalib.par_p6 = (int8_t)regData[15];
+    sensorCalib.par_p7 = (int8_t)regData[14];
+    sensorCalib.par_p8 = (int16_t)BME68X_16BIT_CONCAT(regData[19], regData[18]);
+    sensorCalib.par_p9 = (int16_t)BME68X_16BIT_CONCAT(regData[21], regData[20]);
+    sensorCalib.par_p10 = (uint8_t)regData[22];
+    //Humidity Coeffs
+    sensorCalib.par_h1 = (uint16_t)BME68X_12BIT_LOWER_CONCAT(regData[25], regData[24]);
+    sensorCalib.par_h2 = (uint16_t)BME68X_12BIT_UPPER_CONCAT(regData[23], regData[24]);
+    sensorCalib.par_h3 = (int8_t)regData[26];
+    sensorCalib.par_h4 = (int8_t)regData[27];
+    sensorCalib.par_h5 = (int8_t)regData[28];
+    sensorCalib.par_h6 = (uint8_t)regData[29];
+    sensorCalib.par_h7 = (int8_t)regData[30];
+    //Gas Heater Coeffs
+    sensorCalib.par_gh1 = (int8_t)regData[35];
+    sensorCalib.par_gh2 = (int16_t)BME68X_16BIT_CONCAT(regData[34], regData[33]);
+    sensorCalib.par_gh3 = (int8_t)regData[36];
+    //MISC Coeffs
+    sensorCalib.res_heat_range = (regData[39] & 0x30) / 16;
+    sensorCalib.res_heat_val = (int8_t)regData[37];
+    sensorCalib.range_sw_err = (int8_t)(regData[41] & 0xF0) / 16;
+    return rslt;
 }
 
 /// @brief Gets the memory page from the Sensor for SPI Communication
 /// @return Sensor Status
 int8_t BME68X::getMemPage(){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::getMemPage()\n");
+#endif
     int8_t rslt;
     uint8_t regData;
     rslt = read(BME68X_REGISTER_MEM_PAGE, &regData, 1, &interface);
@@ -152,6 +231,9 @@ int8_t BME68X::getMemPage(){
 /// @param regAddr Address to be written to which determines which mem page to be set
 /// @return Sensor Status
 int8_t BME68X::setMemPage(uint8_t regAddr){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::setMemPage()\n");
+#endif
     int8_t rslt = BME_STATUS_OK;
     uint8_t regData;
     uint8_t t_memPage;
@@ -178,6 +260,9 @@ int8_t BME68X::setMemPage(uint8_t regAddr){
 /// @brief Reads the variant ID for the Sensor (Gas Related for BME680)
 /// @return Sensor Status
 int8_t BME68X::getVariantId(){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::getVariantId()\n");
+#endif
     int8_t rslt = BME_STATUS_OK;
     rslt = read(BME68X_REGISTER_VARIANTID, &VariantID, 1, &interface);
     if(BME_STATUS_OK != rslt){
@@ -189,6 +274,9 @@ int8_t BME68X::getVariantId(){
 /// @brief Writes the sensor mode to SLEEP
 /// @return Sensor Status
 int8_t BME68X::putSensorToSleep(){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::putSensorToSleep()\n");
+#endif
     int8_t rslt;
     uint8_t curMode;
     rslt = read(BME68X_REGISTER_CONTROL , &curMode, 1, &interface);
@@ -363,13 +451,13 @@ int8_t BME68X_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, v
             digitalWrite(comm->sspi.cs, LOW);
             comm->sspi.m_spi->transfer(regAddr & ~0x80);
 #ifdef __DEBUG__
-            Serial.printf("\n\tregAddr -> %02x Data -> {");
+            Serial.printf("\n\tregAddr -> %02x Data -> {", regAddr);
 #endif
             for (uint32_t i = 0; i < len; i ++){
+                comm->sspi.m_spi->transfer(regData[i]);
 #ifdef __DEBUG__
                 Serial.printf("%02x(%03u),", regData[i], regData[i]);
 #endif
-                comm->sspi.m_spi->transfer(regData[i]);
             }
             digitalWrite(comm->sspi.cs, HIGH);
 #ifdef __DEBUG__
@@ -408,7 +496,7 @@ int8_t BME68X_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *in
             for (uint32_t i = 0; i < len; i++){
                 regData[i] = comm->sspi.m_spi->transfer(0xFF);
 #ifdef __DEBUG__
-                Serial.printf("%02x(%u),", regData[i]);
+                Serial.printf("%02x(%03u),", regData[i], regData[i]);
 #endif
             }
             digitalWrite(comm->sspi.cs, HIGH);
@@ -445,6 +533,9 @@ int8_t BME68X_BBSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, 
             comm->bbspi.m_spi->write(regAddr & ~0x80);
             for(uint32_t i = 0; i < len; i++){
                 comm->bbspi.m_spi->write(regData[i]);
+#ifdef __DEBUG__
+                Serial.printf("%02x(%03u),", regData[i], regData[i]);
+#endif
             }
             digitalWrite(comm->bbspi.cs, HIGH);
 #ifdef __DEBUG__
@@ -482,7 +573,7 @@ int8_t BME68X_BBSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *i
             for (uint32_t i = 0; i < len; i++){
                 regData[i] = comm->bbspi.m_spi->read();
 #ifdef __DEBUG__
-                Serial.printf("%02x(%u)", regData[i]);
+                Serial.printf("%02x(%u)", regData[i], regData[i]);
 #endif
             }
             digitalWrite(comm->bbspi.cs, HIGH);
