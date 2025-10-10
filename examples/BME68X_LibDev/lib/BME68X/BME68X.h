@@ -71,7 +71,7 @@
 #define BME68X_CHIP_ID              0x61
 #define BME68X_REGISTER_STATUS      0x73
 #define BME68X_REGISTER_VARIANTID   0xF0
-#define BME68X_REGISTER_CONTROL     0x72
+#define BME68X_REGISTER_CONTROL     0x74
 #define BME68X_REGISTER_SOFTRESET   0xE0
 #define BME68X_REGISTER_MEM_PAGE    0xF3
 #define BME68X_SPI_MEMPAGE_0        0x10
@@ -79,6 +79,10 @@
 
 #define BME68X_STATUS_IM_UPDATE     0x01
 
+#define BME68X_POWERMODE_SLEEP      0x00
+#define BME68X_POWERMODE_FORCED     0x01
+#define BME68X_POWERMODE_PARALLEL   0x02
+#define BME68X_POWERMODE_SEQUENTIAL 0x03
 
 /********************************************************/
 /*! @name  BME68X Data Registers                        */
@@ -123,7 +127,7 @@
 
 #define BME68X_REGISTER_COEFF_1             0x8A
 #define BME68X_REGISTER_COEFF_2             0xE1
-#define BME68X_REGSITER_COEFF_3             0x00
+#define BME68X_REGISTER_COEFF_3             0x00
 
 //Temperature Calibration RegistersA
 #define BME68X_REGISTER_CALIB_TEMP_START    0x8A    //Based on Bosch API, this is where temp coeffs start
@@ -435,6 +439,13 @@ typedef struct{
     uint16_t shared_heatr_dur;
 } BME68X_HeaterConfig_t;
 
+typedef enum{
+    BME68X_MODE_SLEEP       = BME68X_POWERMODE_SLEEP,
+    BME68X_MODE_FORCED      = BME68X_POWERMODE_FORCED,
+    BME68X_MODE_PARLLEL     = BME68X_POWERMODE_PARALLEL,
+    BME68X_MODE_SEQUENTIAL  = BME68X_POWERMODE_SEQUENTIAL 
+}BME68X_Mode_e;
+
 /// @brief BME68X Sensor Data Structure
 typedef struct{
     float temperature;
@@ -448,7 +459,6 @@ class BME68X{
     public:
     void begin(void);
     bool begun(void);
-    //uint8_t getChipID(void);
     //void setConfig(void);
     //const BME68X_Config_t getConfig();
 
@@ -463,7 +473,7 @@ class BME68X{
     int8_t getMemPage(void);
     int8_t setMemPage(uint8_t regAddr);
     int8_t getVariantId(void);
-    //int8_t setSensorMode(BME68X_Mode_t _mode);
+    int8_t setSensorMode(BME68X_Mode_e mode);
     int8_t putSensorToSleep(void);
     //int32_t compTemperature(int32_t);
     //uint32_t compPressure(int32_t);

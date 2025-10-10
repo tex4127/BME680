@@ -173,7 +173,7 @@ int8_t BME68X::getCalibData(){
     if(BME_STATUS_OK != rslt){
         return rslt;
     }
-    rslt = read(BME68X_REGSITER_COEFF_3, &regData[BME68X_LEN_COEFF_1 + BME68X_LEN_COEFF_2], BME68X_LEN_COEFF_3, &interface);
+    rslt = read(BME68X_REGISTER_COEFF_3, &regData[BME68X_LEN_COEFF_1 + BME68X_LEN_COEFF_2], BME68X_LEN_COEFF_3, &interface);
     if(BME_STATUS_OK != rslt){
         return rslt;
     }
@@ -268,6 +268,31 @@ int8_t BME68X::getVariantId(){
     if(BME_STATUS_OK != rslt){
         return rslt;
     }
+    return rslt;
+}
+
+/// @brief Sets the Sensor mode to the desired operation mode
+/// @param mode Mode to which the sensor will be set
+/// @return Sensor Status
+int8_t BME68X::setSensorMode(BME68X_Mode_e mode){
+    int8_t rslt = BME_STATUS_OK;
+    uint8_t regData;
+    uint8_t powMode = 0;
+    uint8_t regAddr = BME68X_REGISTER_CONTROL;
+    do{
+        rslt = read(regAddr, &regData, 1, &interface);
+        if(BME_STATUS_OK != rslt){
+            continue;
+        }
+        powMode = regData & 0x03;
+        if(powMode != BME68X_POWERMODE_SLEEP){
+            regData &= ~0x03;
+            rslt = write(regAddr, &regData, 1, &interface);
+            delay_us(10000, &interface);
+        }
+    }while((powMode != BME68X_POWERMODE_SLEEP) && (rslt == BME_STATUS_OK));
+    regData = (regData & ~0x03) | (mode & 0x03);
+    rslt = write(regAddr, &regData, 1, &interface);
     return rslt;
 }
 
