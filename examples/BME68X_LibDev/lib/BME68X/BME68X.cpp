@@ -43,23 +43,72 @@
 //
 //***********************************************************//
 
-void BME68X::init(){
-    int8_t rslt = BME_STATUS_OK;
-    rslt = read(BME68X_REGISTER_CHIPID, &ChipID, 1, &interface);
-    if(BME_STATUS_OK != rslt){
-        _begun = false;
-        return;
+/// @brief Begin method, Starts interface comms and initialized chip
+void BME68X::begin(){
+    memset(&sensorConfig, 0, sizeof(BME68X_Config_t));
+    switch (intfType){
+        case 0x01:
+            interface.i2c.m_i2c->begin();
+            write = BME68X_I2CWrite;
+            read = BME68X_I2CRead;
+        break;
+        case 0x02:
+            interface.spi.m_spi->begin();
+            pinMode(interface.spi.cs, OUTPUT);
+            digitalWrite(interface.spi.cs, HIGH); delay(1);
+            digitalWrite(interface.spi.cs, LOW); delay(1);
+            digitalWrite(interface.spi.cs, HIGH);
+            write = BME68X_SPIWrite;
+            read = BME68X_SPIRead;
+        break;
+        case 0x04:
+            interface.sspi.m_spi->begin();
+            pinMode(interface.sspi.cs, OUTPUT);
+            digitalWrite(interface.sspi.cs, HIGH); delay(1);
+            digitalWrite(interface.sspi.cs, LOW); delay(1);
+            digitalWrite(interface.sspi.cs, HIGH);
+            write = BME68X_SSPIWrite;
+            read = BME68X_SSPIRead;
+        break;
+        case 0x08:
+            interface.bbspi.m_spi->begin();
+            pinMode(interface.bbspi.cs, OUTPUT);
+            digitalWrite(interface.bbspi.cs, HIGH); delay(1);
+            digitalWrite(interface.bbspi.cs, LOW); delay(1);
+            digitalWrite(interface.bbspi.cs, HIGH);
+            write = BME68X_BBSPIWrite;
+            read = BME68X_BBSPIRead;
+        break;
+        default:
+            _begun = false;
+            return;
+        break;
     }
-    if(0x60 != ChipID){
-        _begun = false;
-        return;
-    }
-    rslt = softReset();
-    uint8_t regAddr = BME68X_REGISTER_STATUS;
-    uint8_t regData = 0x01;
-    read(regAddr, &regData, 1, &interface);
+    delay_us = BME68X_delayUs;
+    int8_t st = init();
+    _begun = (BME_STATUS_OK == st) ? true : false ;
+}
 
-    
+/// @brief Getter for Begun status
+/// @return begun status of the sensor
+bool BME68X::begun(){
+    return this->_begun;
+}
+
+/// @brief Sensor Initializer
+/// @return Sensor Status
+int8_t BME68X::init(){
+    int8_t rslt = BME_STATUS_OK;
+    softReset();
+    //Get Chip ID
+    rslt = read(BME68X_REGISTER_CHIPID, &ChipID, 1, &interface);
+    if(BME_STATUS_OK != rslt || BME68X_CHIP_ID != ChipID){
+        return BME_E_DEV_NOT_FOUND;
+    }
+    rslt = read(BME68X_REGISTER_VARIANTID, &VariantID, 1, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    } 
 }
 
 /// @brief Soft Resets the sensor
@@ -86,7 +135,8 @@ int8_t BME68X::getCalibData(){
     return 0;
 }
 
-
+/// @brief Gets the memory page from the Sensor for SPI Communication
+/// @return Sensor Status
 int8_t BME68X::getMemPage(){
     int8_t rslt;
     uint8_t regData;
@@ -95,8 +145,49 @@ int8_t BME68X::getMemPage(){
         return rslt;
     }
     memPage = regData & 0x10; //memory page mask
+    return rslt;
 }
 
+/// @brief Sets the appropriate Sensor memory page based on the regAddr being written to
+/// @param regAddr Address to be written to which determines which mem page to be set
+/// @return Sensor Status
+int8_t BME68X::setMemPage(uint8_t regAddr){
+    int8_t rslt = BME_STATUS_OK;
+    uint8_t regData;
+    uint8_t t_memPage;
+    if(regAddr > 0x7F){
+        t_memPage = BME68X_SPI_MEMPAGE_1;
+    }else{
+        t_memPage = BME68X_SPI_MEMPAGE_0;
+    }
+    if(memPage != t_memPage){
+        memPage = t_memPage;
+        //The below method params was | 0x80, this is moved to the read/write commands directly
+        rslt = read(BME68X_REGISTER_MEM_PAGE, &regData, 1, &interface);
+        if(BME_STATUS_OK != rslt){
+            return rslt;
+        }
+        regData &= ~0x10; //0x10 is the mask for SPI Memory Page
+        regData |= (memPage & 0x10);
+        rslt = write(BME68X_REGISTER_MEM_PAGE, &regData, 1, &interface);
+        return rslt;
+    }
+    return rslt;
+}
+
+/// @brief Reads the variant ID for the Sensor (Gas Related for BME680)
+/// @return Sensor Status
+int8_t BME68X::getVariantId(){
+    int8_t rslt = BME_STATUS_OK;
+    rslt = read(BME68X_REGISTER_VARIANTID, &VariantID, 1, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    return rslt;
+}
+
+/// @brief Writes the sensor mode to SLEEP
+/// @return Sensor Status
 int8_t BME68X::putSensorToSleep(){
     int8_t rslt;
     uint8_t curMode;
@@ -173,7 +264,7 @@ BME688::BME688(uint8_t cs, BBSPIClass *bbspi){
 /// @brief Delays for a set number of microseconds diuring idel states
 /// @param period Period in microseconds for the standby delay
 /// @param intfPtr pointer to the BME_Interface_u comm
-void BME280_delayUs(uint32_t period, void *intfPtr){
+void BME68X_delayUs(uint32_t period, void *intfPtr){
     delayMicroseconds(period);
 }
 
@@ -182,7 +273,7 @@ void BME280_delayUs(uint32_t period, void *intfPtr){
 /// @param regData Data to be written to the register (typically on byte, could be more)
 /// @param len Number of data values to be written
 /// @param intfPtr Pointer to our Digital Communcation interface
-int8_t BME280_SPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_SPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
 #ifdef __DEBUG__
     Serial.printf("\nSPIWrite(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
 #endif
@@ -221,7 +312,7 @@ int8_t BME280_SPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, vo
 /// @param regData Data to be read from the register (uint8_t array)
 /// @param len Number of data values (attempted) to be read
 /// @param intfPtr Pointer to our Digital Communication interface
-int8_t BME280_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
 #ifdef __DEBUG__
     Serial.printf("\nSPIRead(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
 #endif
@@ -260,7 +351,7 @@ int8_t BME280_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *int
 /// @param regData Data to be written to the register (typically on byte, could be more)
 /// @param len Number of data values to be written
 /// @param intfPtr Pointer to our Digital Communcation interface
-int8_t BME280_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
 #ifdef __DEBUG__
     Serial.printf("\nSSPIWrite(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
 #endif
@@ -299,7 +390,7 @@ int8_t BME280_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, v
 /// @param regData Data to be read from the register (uint8_t array)
 /// @param len Number of data values (attempted) to be read
 /// @param intfPtr Pointer to our Digital Communication interface
-int8_t BME280_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
 #ifdef __DEBUG__
     Serial.printf("\nSSPIRead(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
 #endif
@@ -338,7 +429,7 @@ int8_t BME280_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *in
 /// @param regData Data to be written to the register (typically on byte, could be more)
 /// @param len Number of data values to be written
 /// @param intfPtr Pointer to our Digital Communcation interface
-int8_t BME280_BBSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_BBSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
 #ifdef __DEBUG__
     Serial.printf("\nBBSPIWrite(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
 #endif
@@ -373,7 +464,7 @@ int8_t BME280_BBSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, 
 /// @param regData Data to be read from the register (uint8_t array)
 /// @param len Number of data values (attempted) to be read
 /// @param intfPtr Pointer to our Digital Communication interface
-int8_t BME280_BBSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_BBSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
 #ifdef __DEBUG__
     Serial.printf("\nBBSPIRead(%02x,%02x,%u,&intf)", regAddr, regData[0], len);
 #endif
@@ -412,7 +503,7 @@ int8_t BME280_BBSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *i
 /// @param regData Data to be written to the register (typically on byte, could be more)
 /// @param len Number of data values to be written
 /// @param intfPtr Pointer to our Digital Communcation interface
-int8_t BME280_I2CWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_I2CWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr){
     BME_Interface_u *comm = NULL;
     int8_t rslt = BME_STATUS_OK;
     if(intfPtr){
@@ -438,7 +529,7 @@ int8_t BME280_I2CWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, vo
 /// @param regData Data to be read from the register (uint8_t array)
 /// @param len Number of data values (attempted) to be read
 /// @param intfPtr Pointer to our Digital Communication interface
-int8_t BME280_I2CRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
+int8_t BME68X_I2CRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr){
     BME_Interface_u *comm = NULL;
     int8_t rslt = BME_STATUS_OK;
     if(intfPtr){

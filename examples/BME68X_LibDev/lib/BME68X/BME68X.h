@@ -50,25 +50,28 @@
 /********************************************************/
 
 /********************************************************/
-/*! @name BME280 Addresses                              */
+/*! @name BME68X Addresses                              */
 /********************************************************/
 
 /********************************************************/
-/*! @name BME280 Statuses                               */
+/*! @name BME68X Statuses                               */
 /********************************************************/
 
 #define BME68X_REGISTER_CHIPID      0xD0
+#define BME68X_CHIP_ID              0x61
 #define BME68X_REGISTER_STATUS      0x73
 #define BME68X_REGISTER_VARIANTID   0xF0
 #define BME68X_REGISTER_CONTROL     0x72
 #define BME68X_REGISTER_SOFTRESET   0xE0
 #define BME68X_REGISTER_MEM_PAGE    0xF3
+#define BME68X_SPI_MEMPAGE_0        0x10
+#define BME68X_SPI_MEMPAGE_1        0x00
 
 #define BME68X_STATUS_IM_UPDATE     0x01
 
 
 /********************************************************/
-/*! @name  BME280 Data Registers                        */
+/*! @name  BME68X Data Registers                        */
 /********************************************************/
 
 /*!
@@ -265,23 +268,23 @@ typedef BME_RET_VALUE_TYPE (* BME68X_INTF_READ)(uint8_t, uint8_t*, uint32_t, voi
 #ifndef BME68X_API_FUNTIONS
 #define BME68X_API_FUNCTIONS
 //Delay/Idle Function
-void BME280_delayUs(uint32_t period, void *intfPtr);
+void BME68X_delayUs(uint32_t period, void *intfPtr);
 //Hardware SPI
-int8_t BME280_SPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
-int8_t BME280_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void* intfPtr);
+int8_t BME68X_SPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME68X_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void* intfPtr);
 //Software SPI
-int8_t BME280_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
-int8_t BME280_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME68X_SSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME68X_SSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
 //BitBang SPI
-int8_t BME280_BBSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
-int8_t BME280_BBSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME68X_BBSPIWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME68X_BBSPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
 //Hardware I2C
-int8_t BME280_I2CWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
-int8_t BME280_I2CRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME68X_I2CWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
+int8_t BME68X_I2CRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
 #endif
 
 /********************************************************/
-/*! @name  BME280 Data Structures                       */
+/*! @name  BME68X Data Structures                       */
 /********************************************************/
 
 /// @brief Structure to store all Calibration Coefficients for the BME68X chip set
@@ -416,6 +419,7 @@ typedef struct{
     uint16_t shared_heatr_dur;
 } BME68X_HeaterConfig_t;
 
+/// @brief BME68X Sensor Data Structure
 typedef struct{
     float temperature;
     float pressure;
@@ -428,25 +432,26 @@ class BME68X{
     public:
     void begin(void);
     bool begun(void);
-    uint8_t getChipID(void);
-    void setConfig(void);
-    const BME68X_Config_t getConfig();
+    //uint8_t getChipID(void);
+    //void setConfig(void);
+    //const BME68X_Config_t getConfig();
 
-    int8_t readSensor(void);
-    const BME68X_Data_t getSensorData(void);
-    uint32_t getMeasurementTime(void); 
+    //int8_t readSensor(void);
+    //const BME68X_Data_t getSensorData(void);
+    //uint32_t getMeasurementTime(void); 
 
     protected:
-    virtual void init();
+    virtual int8_t init();
     int8_t softReset(void);
     int8_t getCalibData(void);
     int8_t getMemPage(void);
     int8_t setMemPage(uint8_t regAddr);
+    int8_t getVariantId(void);
     //int8_t setSensorMode(BME68X_Mode_t _mode);
     int8_t putSensorToSleep(void);
-    int32_t compTemperature(int32_t);
-    uint32_t compPressure(int32_t);
-    uint32_t compHumidity(int32_t);
+    //int32_t compTemperature(int32_t);
+    //uint32_t compPressure(int32_t);
+    //uint32_t compHumidity(int32_t);
 
 
     BME68X_INTF_WRITE write;
@@ -457,6 +462,7 @@ class BME68X{
 
     uint8_t intfType = 0x00;        //0x00 == NONE | 0x01 == I2C | 0x02 == HSPI | 0x04 == SSPI | 0x08 == BBSPI
     uint8_t ChipID;
+    uint8_t VariantID;
     BME68X_Calib_t sensorCalib;
     BME68X_Config_t sensorConfig;
     uint8_t memPage = 0;
