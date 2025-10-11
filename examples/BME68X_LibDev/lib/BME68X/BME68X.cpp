@@ -98,6 +98,14 @@ bool BME68X::begun(){
     return this->_begun;
 }
 
+void BME68X::setConfig(BME68X_Config_t conf){
+    int8_t rslt = BME_STATUS_OK;
+    uint8_t odr20=0, odr3=1;
+    uint8_t opMode;
+    //based on docs, 
+    
+}
+
 /// @brief Sensor Initializer
 /// @return Sensor Status
 int8_t BME68X::init(){

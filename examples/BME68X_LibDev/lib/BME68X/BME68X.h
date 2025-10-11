@@ -79,10 +79,7 @@
 
 #define BME68X_STATUS_IM_UPDATE     0x01
 
-#define BME68X_POWERMODE_SLEEP      0x00
-#define BME68X_POWERMODE_FORCED     0x01
-#define BME68X_POWERMODE_PARALLEL   0x02
-#define BME68X_POWERMODE_SEQUENTIAL 0x03
+
 
 /********************************************************/
 /*! @name  BME68X Data Registers                        */
@@ -232,6 +229,39 @@
 //Gas Measurement Registers
 #define BME68X_REGISTER_HEAT_RANGE          0x02    //[5:4]
 #define BME68X_REGISTER_HEAT_VAL            0x00    
+
+/********************************************************/
+/*! @name  BME68X Sensor Modes                          */
+/********************************************************/
+
+#define BME68X_POWERMODE_SLEEP      0x00
+#define BME68X_POWERMODE_FORCED     0x01
+#define BME68X_POWERMODE_PARALLEL   0x02
+#define BME68X_POWERMODE_SEQUENTIAL 0x03
+
+/********************************************************/
+/*! @name  BME280 ODR/Standby Macros                    */
+/********************************************************/
+
+#define BME68X_ODR_0_59_MS          0x00
+#define BME68X_ODR_62_5_MS          0x01
+#define BME68X_ODR_125_MS           0x02
+#define BME68X_ODR_250_MS           0x03
+#define BME68X_ODR_500_MS           0x04
+#define BME68X_ODR_1000_MS          0x05
+#define BEM68X_ODR_10_MS            0x06
+#define BME68X_ODR_20_MS            0x07
+#define BME68X_ODR_NONE             0x08
+
+/********************************************************/
+/*! @name  BME68X Filter Coeffs                         */
+/********************************************************/
+
+#define BME68X_RILTER_COEFF_OFF     0x00
+#define BME68X_FILTER_COEFF_2X      0x01
+#define BME68X_FILTER_COEFF_4X      0x02
+#define BME68X_FILTER_COEFF_8X      0x03
+/** To Do, finish out the config devfines */
 
 /********************************************************/
 /*  BMEXXX Interface Union                              */
@@ -428,6 +458,8 @@ typedef struct{
     uint8_t mode;
 } BME68X_Config_t;
 
+
+
 /// @brief BME68X Heater Config Structure
 typedef struct{
     uint8_t enable;
@@ -446,6 +478,10 @@ typedef enum{
     BME68X_MODE_SEQUENTIAL  = BME68X_POWERMODE_SEQUENTIAL 
 }BME68X_Mode_e;
 
+typedef enum{
+    BME280
+} BME280_OS_e;
+
 /// @brief BME68X Sensor Data Structure
 typedef struct{
     float temperature;
@@ -459,7 +495,7 @@ class BME68X{
     public:
     void begin(void);
     bool begun(void);
-    //void setConfig(void);
+    void setConfig(BME68X_Config_t conf);
     //const BME68X_Config_t getConfig();
 
     //int8_t readSensor(void);
