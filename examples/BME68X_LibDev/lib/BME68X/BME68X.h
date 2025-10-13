@@ -59,6 +59,15 @@
 #define BME68X_12BIT_UPPER_CONCAT(msb, lsb)         (uint16_t)(((uint16_t)msb << 4) | \
                                                     ((uint16_t)lsb >> 4))
 
+#define BME68X_CTRLMEAS_REG(ors_t, ors_p, mode)     (uint8_t)(ors_t & 0x07) << 5 | \
+                                                    (uint8_t)(ors_p & 0x07) << 2 | \
+                                                    (uint8_t)(mode & 0x03)
+
+#define BME68X_CTRLHUM_REG(ors_h)                   (uint8_t)(ors_h & 0x07)
+
+#define BME68X_CONFIG_REG(filter, spi3w)            (uint8_t)(filter & 0x07) << 2 | \
+                                                    (uint8_t)(spi3w & 0x01)
+
 /********************************************************/
 /*! @name BME68X Addresses                              */
 /********************************************************/
@@ -67,15 +76,17 @@
 /*! @name BME68X Statuses                               */
 /********************************************************/
 
-#define BME68X_REGISTER_CHIPID      0xD0
-#define BME68X_CHIP_ID              0x61
-#define BME68X_REGISTER_STATUS      0x73
-#define BME68X_REGISTER_VARIANTID   0xF0
-#define BME68X_REGISTER_CONTROL     0x74
-#define BME68X_REGISTER_SOFTRESET   0xE0
-#define BME68X_REGISTER_MEM_PAGE    0xF3
-#define BME68X_SPI_MEMPAGE_0        0x10
-#define BME68X_SPI_MEMPAGE_1        0x00
+#define BME68X_REGISTER_CHIPID          0xD0
+#define BME68X_CHIP_ID                  0x61
+#define BME68X_REGISTER_STATUS          0x73
+#define BME68X_REGISTER_VARIANTID       0xF0
+#define BME68X_REGISTER_CONFIG          0x75
+#define BME68X_REGISTER_CONTROL         0x74
+#define BME68X_REGISTER_CONTROLHUMID    0x72
+#define BME68X_REGISTER_SOFTRESET       0xE0
+#define BME68X_REGISTER_MEM_PAGE        0xF3
+#define BME68X_SPI_MEMPAGE_0            0x10
+#define BME68X_SPI_MEMPAGE_1            0x00
 
 #define BME68X_STATUS_IM_UPDATE     0x01
 
@@ -240,7 +251,18 @@
 #define BME68X_POWERMODE_SEQUENTIAL 0x03
 
 /********************************************************/
-/*! @name  BME280 ODR/Standby Macros                    */
+/*! @name  BME68X ODR/Standby Macros                    */
+/********************************************************/
+
+#define BME68X_OVERSAMPLING_NONE    0x00
+#define BME68X_OVERSAMPLING_1X      0x01
+#define BME68X_OVERSAMPLING_2X      0x02
+#define BME68X_OVERSAMPLING_4X      0x03
+#define BME68X_OVERSAMPLING_8X      0x04
+#define BME68X_OVERSAMPLING_16X     0x05
+
+/********************************************************/
+/*! @name  BME68X ODR/Standby Macros                    */
 /********************************************************/
 
 #define BME68X_ODR_0_59_MS          0x00
@@ -249,7 +271,7 @@
 #define BME68X_ODR_250_MS           0x03
 #define BME68X_ODR_500_MS           0x04
 #define BME68X_ODR_1000_MS          0x05
-#define BEM68X_ODR_10_MS            0x06
+#define BME68X_ODR_10_MS            0x06
 #define BME68X_ODR_20_MS            0x07
 #define BME68X_ODR_NONE             0x08
 
@@ -257,11 +279,14 @@
 /*! @name  BME68X Filter Coeffs                         */
 /********************************************************/
 
-#define BME68X_RILTER_COEFF_OFF     0x00
+#define BME68X_FILTER_COEFF_OFF     0x00
 #define BME68X_FILTER_COEFF_2X      0x01
 #define BME68X_FILTER_COEFF_4X      0x02
 #define BME68X_FILTER_COEFF_8X      0x03
-/** To Do, finish out the config devfines */
+#define BME68X_FILTER_COEFF_16X     0x04
+#define BME68X_FILTER_COEFF_32X     0x05
+#define BME68X_FILTER_COEFF_64X     0x06
+#define BME68X_FILTER_COEFF_128X    0x07
 
 /********************************************************/
 /*  BMEXXX Interface Union                              */
@@ -471,6 +496,7 @@ typedef struct{
     uint16_t shared_heatr_dur;
 } BME68X_HeaterConfig_t;
 
+/// @brief BME68X Operation Mode Enumerator
 typedef enum{
     BME68X_MODE_SLEEP       = BME68X_POWERMODE_SLEEP,
     BME68X_MODE_FORCED      = BME68X_POWERMODE_FORCED,
@@ -478,9 +504,40 @@ typedef enum{
     BME68X_MODE_SEQUENTIAL  = BME68X_POWERMODE_SEQUENTIAL 
 }BME68X_Mode_e;
 
+/// @brief BME68X Oversampling Enumerator
 typedef enum{
-    BME280
-} BME280_OS_e;
+    BME68X_OS_NONE          = BME68X_OVERSAMPLING_NONE,
+    BME68X_OS_1X            = BME68X_OVERSAMPLING_1X,
+    BME68X_OS_2X            = BME68X_OVERSAMPLING_2X,
+    BME68X_OS_4X            = BME68X_OVERSAMPLING_4X,
+    BME68X_OS_8X            = BME68X_OVERSAMPLING_8X,
+    BME68X_OS_16X           = BME68X_OVERSAMPLING_16X
+} BME68X_OS_e;
+
+/// @brief BME68X Filter Enumerator
+typedef enum{
+    BME68X_FILTER_OFF       = BME68X_FILTER_COEFF_OFF,
+    BME68X_FILTER_SIZE_1    = BME68X_FILTER_COEFF_2X,
+    BME68X_FILTER_SIZE_3    = BME68X_FILTER_COEFF_4X,
+    BME68X_FILTER_SIZE_7    = BME68X_FILTER_COEFF_8X,
+    BME68X_FILTER_SIZE_15   = BME68X_FILTER_COEFF_16X,
+    BME68X_FILTER_SIZE_31   = BME68X_FILTER_COEFF_32X,
+    BME68X_FILTER_SIZE_63   = BME68X_FILTER_COEFF_64X,
+    BME68X_FILTER_SIZE_127  = BME68X_FILTER_COEFF_128X
+} BME68X_FilterSize_e;
+
+/// @brief BME68X Standby time
+typedef enum{
+    BME68X_ODR_0ms          = BME68X_ODR_NONE,
+    BME68X_ODR_5ms          = BME68X_ODR_0_59_MS,
+    BME68X_ODR_10ms         = BME68X_ODR_10_MS,
+    BME68X_ODR_20ms         = BME68X_ODR_20_MS,
+    BME68X_ODR_63ms         = BME68X_ODR_62_5_MS,
+    BME68X_ODR_125ms        = BME68X_ODR_125_MS,
+    BME68X_ODR_250ms        = BME68X_ODR_250_MS,
+    BME68X_ODR_500ms        = BME68X_ODR_500_MS,
+    BME68X_ODR_1000ms       = BME68X_ODR_1000_MS
+} BME68X_ODR_e;
 
 /// @brief BME68X Sensor Data Structure
 typedef struct{
@@ -490,13 +547,16 @@ typedef struct{
     float resistance;
 } BME68X_Data_t;
 
-
 class BME68X{
     public:
     void begin(void);
     bool begun(void);
-    void setConfig(BME68X_Config_t conf);
-    //const BME68X_Config_t getConfig();
+    void setConfig(BME68X_Mode_e mode = BME68X_Mode_e::BME68X_MODE_SEQUENTIAL,
+                BME68X_OS_e osTemp = BME68X_OS_e::BME68X_OS_16X,
+                BME68X_OS_e osPress = BME68X_OS_e::BME68X_OS_16X,
+                BME68X_OS_e osHum = BME68X_OS_e::BME68X_OS_16X,
+                BME68X_FilterSize_e filterSize = BME68X_FilterSize_e::BME68X_FILTER_OFF);
+    const BME68X_Config_t getConfig();
 
     //int8_t readSensor(void);
     //const BME68X_Data_t getSensorData(void);

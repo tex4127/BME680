@@ -98,12 +98,72 @@ bool BME68X::begun(){
     return this->_begun;
 }
 
-void BME68X::setConfig(BME68X_Config_t conf){
+/// @brief Sets the oversampling, mode 
+/// @param mode Mode to set 
+/// @param osTemp Oversampling rate for temperature measurments
+/// @param osPress Oversampling rate for pressure measurements
+/// @param osHum Oversampling rate for Humidity measurements
+/// @param filterSize Filter size set by filter coeffs
+void BME68X::setConfig(BME68X_Mode_e mode = BME68X_Mode_e::BME68X_MODE_SEQUENTIAL,
+                BME68X_OS_e osTemp = BME68X_OS_e::BME68X_OS_16X,
+                BME68X_OS_e osPress = BME68X_OS_e::BME68X_OS_16X,
+                BME68X_OS_e osHum = BME68X_OS_e::BME68X_OS_16X,
+                BME68X_FilterSize_e filterSize = BME68X_FilterSize_e::BME68X_FILTER_OFF){
     int8_t rslt = BME_STATUS_OK;
-    uint8_t odr20=0, odr3=1;
-    uint8_t opMode;
-    //based on docs, 
-    
+    uint8_t regAddr[] = {BME68X_REGISTER_CONTROLHUMID, 
+                        BME68X_REGISTER_CONTROL, 
+                        BME68X_REGISTER_CONFIG};
+    uint8_t regData[] = {BME68X_CTRLHUM_REG(osHum),
+                        BME68X_CTRLMEAS_REG(osTemp, osPress, mode),
+                        BME68X_CONFIG_REG(filterSize, 0)};
+    uint8_t regData_s = 0x00;
+    //Put the sensor to sleep
+    if(BME_STATUS_OK != write(BME68X_REGISTER_CONTROL, &regData_s, 1, &interface)){
+#ifdef __DEBUG__
+        Serial.printf("\nError Putting Device to sleep | BME68X::setConfig()\n");
+#endif
+        return;
+    }
+    if(BME_STATUS_OK != write(regAddr[0], &regData[0], 1, &interface)){
+#ifdef __DEBUG__
+        Serial.printf("\nError writting Humid Control Reg\n>>regAddr %02x\n>>regData %02x\n", regAddr[0], regData[0]);
+#endif
+        return;
+    }
+    if(BME_STATUS_OK != write(regAddr[2], &regData[2], 1, &interface)){
+#ifdef __DEBUG__
+        Serial.printf("\nError writting Config Reg\n>>regAddr %02x\n>>regData %02x\n", regAddr[2], regData[2]);
+#endif
+        return;
+    }
+    if(BME_STATUS_OK != write(regAddr[1], &regData[1], 1, &interface)){
+#ifdef __DEBUG__
+        Serial.printf("\nError writting Measure Control Reg\n>>regAddr %02x\n>>regData %02x\n", regAddr[1], regData[1]);
+#endif
+        return;
+    }
+    return;
+}
+
+/// @brief Reads the pertinent config registers and updates the config strucutre
+/// @return pointer to config structure
+const BME68X_Config_t BME68X::getConfig(){
+    uint8_t regData[4] = {0};
+    if(BME_STATUS_OK != read(BME68X_REGISTER_CONTROLHUMID, regData, 4, &interface)){
+#ifdef __DEBUG__
+        Serial.printf("\nError reading Config | BME68X::getConfig()\n");
+#endif
+    }
+    //regAddr[0] == 0x72 | regData[0] == os_hum
+    sensorConfig.os_hum = regData[0] & 0x07;
+    //regAddr[2] == 0x74 | regData[2] == os_temp, os_press, mode
+    sensorConfig.os_temp = (regData[2] & 0xE0) >> 5;
+    sensorConfig.os_press = (regData[2] & 0x1C) >> 2;
+    sensorConfig.mode = (regData[2] & 0x03);
+    //regAddr[3] == 0x75 | regData[3] = filter, spi_3w_en
+    sensorConfig.filter = (regData[3] & 0x1C) >> 2;
+    //We dont care about 3 wire SPI
+    return sensorConfig;
 }
 
 /// @brief Sensor Initializer
