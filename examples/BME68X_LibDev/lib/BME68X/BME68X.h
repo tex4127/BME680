@@ -59,14 +59,14 @@
 #define BME68X_12BIT_UPPER_CONCAT(msb, lsb)         (uint16_t)(((uint16_t)msb << 4) | \
                                                     ((uint16_t)lsb >> 4))
 
-#define BME68X_CTRLMEAS_REG(ors_t, ors_p, mode)     (uint8_t)(ors_t & 0x07) << 5 | \
-                                                    (uint8_t)(ors_p & 0x07) << 2 | \
-                                                    (uint8_t)(mode & 0x03)
+#define BME68X_CTRLMEAS_REG(ors_t, ors_p, mode)     (uint8_t)((ors_t & 0x07) << 5 | \
+                                                    (ors_p & 0x07) << 2 | \
+                                                    (mode & 0x03))
 
 #define BME68X_CTRLHUM_REG(ors_h)                   (uint8_t)(ors_h & 0x07)
 
-#define BME68X_CONFIG_REG(filter, spi3w)            (uint8_t)(filter & 0x07) << 2 | \
-                                                    (uint8_t)(spi3w & 0x01)
+#define BME68X_CONFIG_REG(filter, spi3w)            (uint8_t)((filter & 0x07) << 2 | \
+                                                    (spi3w & 0x01))
 
 /********************************************************/
 /*! @name BME68X Addresses                              */
@@ -88,7 +88,7 @@
 #define BME68X_SPI_MEMPAGE_0            0x10
 #define BME68X_SPI_MEMPAGE_1            0x00
 
-#define BME68X_STATUS_IM_UPDATE     0x01
+#define BME68X_STATUS_IM_UPDATE         0x01
 
 
 

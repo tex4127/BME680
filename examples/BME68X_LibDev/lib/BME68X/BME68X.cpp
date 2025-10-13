@@ -104,12 +104,11 @@ bool BME68X::begun(){
 /// @param osPress Oversampling rate for pressure measurements
 /// @param osHum Oversampling rate for Humidity measurements
 /// @param filterSize Filter size set by filter coeffs
-void BME68X::setConfig(BME68X_Mode_e mode = BME68X_Mode_e::BME68X_MODE_SEQUENTIAL,
-                BME68X_OS_e osTemp = BME68X_OS_e::BME68X_OS_16X,
-                BME68X_OS_e osPress = BME68X_OS_e::BME68X_OS_16X,
-                BME68X_OS_e osHum = BME68X_OS_e::BME68X_OS_16X,
-                BME68X_FilterSize_e filterSize = BME68X_FilterSize_e::BME68X_FILTER_OFF){
-    int8_t rslt = BME_STATUS_OK;
+void BME68X::setConfig(BME68X_Mode_e mode,
+                BME68X_OS_e osTemp,
+                BME68X_OS_e osPress,
+                BME68X_OS_e osHum,
+                BME68X_FilterSize_e filterSize){
     uint8_t regAddr[] = {BME68X_REGISTER_CONTROLHUMID, 
                         BME68X_REGISTER_CONTROL, 
                         BME68X_REGISTER_CONFIG};

@@ -32,6 +32,16 @@ void setup() {
 #endif
     bme->begin();
     Serial.printf("Begin Status -> %d\n", bme->begun());
+    Serial.printf("Setting BME68X_Config\n");
+    bme->setConfig(BME68X_Mode_e::BME68X_MODE_FORCED,
+                    BME68X_OS_e::BME68X_OS_16X, BME68X_OS_e::BME68X_OS_16X, BME68X_OS_e::BME68X_OS_16X, 
+                    BME68X_FilterSize_e::BME68X_FILTER_SIZE_15);
+    Serial.printf("Getting BME68X_Config\n");
+    BME68X_Config_t conf = bme->getConfig();
+    Serial.printf("Mode  -> %02x\n", conf.mode);
+    Serial.printf("osr_t -> %02x\n", conf.os_temp);
+    Serial.printf("osr_p -> %02x\n", conf.os_press);
+    Serial.printf("osr_h -> %02x\n", conf.os_hum);
     while(1)
         ;
 }
