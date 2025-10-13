@@ -558,8 +558,8 @@ class BME68X{
                 BME68X_FilterSize_e filterSize = BME68X_FilterSize_e::BME68X_FILTER_OFF);
     const BME68X_Config_t getConfig();
 
-    //int8_t readSensor(void);
-    //const BME68X_Data_t getSensorData(void);
+    int8_t readSensor(void);
+    const BME68X_Data_t getSensorData(void);
     //uint32_t getMeasurementTime(void); 
 
     protected:
@@ -571,9 +571,9 @@ class BME68X{
     int8_t getVariantId(void);
     int8_t setSensorMode(BME68X_Mode_e mode);
     int8_t putSensorToSleep(void);
-    //int32_t compTemperature(int32_t);
-    //uint32_t compPressure(int32_t);
-    //uint32_t compHumidity(int32_t);
+    int32_t compTemperature(int32_t);
+    uint32_t compPressure(int32_t);
+    uint32_t compHumidity(int32_t);
 
 
     BME68X_INTF_WRITE write;
@@ -581,10 +581,12 @@ class BME68X{
     BME68X_DELAY_FUNC delay_us;
     bool _begun = false;
     BME_Interface_u interface;
-
+    
     uint8_t intfType = 0x00;        //0x00 == NONE | 0x01 == I2C | 0x02 == HSPI | 0x04 == SSPI | 0x08 == BBSPI
     uint8_t ChipID;
     uint8_t VariantID;
+    int32_t t_fine;
+    BME68X_Data_t sensorData;
     BME68X_Calib_t sensorCalib;
     BME68X_Config_t sensorConfig;
     uint8_t memPage = 0;

@@ -88,6 +88,7 @@ void BME68X::begin(){
         break;
     }
     delay_us = BME68X_delayUs;
+    sensorData = {0};
     int8_t st = init();
     _begun = (BME_STATUS_OK == st) ? true : false ;
 }
@@ -163,6 +164,33 @@ const BME68X_Config_t BME68X::getConfig(){
     sensorConfig.filter = (regData[3] & 0x1C) >> 2;
     //We dont care about 3 wire SPI
     return sensorConfig;
+}
+
+int8_t BME68X::readSensor(){
+    uint8_t regAddr = BME68X_REGISTER_PRESS_ADC_0;
+    uint8_t regData[8] = {0};
+    int8_t rslt = BME_STATUS_OK;
+    rslt = read(regAddr, regData, 8, &interface);
+    if(BME_STATUS_OK != rslt){
+#ifdef __DEBUG__
+        Serial.printf("\nError BME68X::readSensor()\n>>regAddr %02x\n", regAddr);
+#endif
+    }
+    //Now parse our data
+    int32_t adc_p = ((regData[0] << 16) | (regData[1] << 8) | regData[2]) >> 4;
+    int32_t adc_t = ((regData[3] << 16) | (regData[4] << 8) | regData[5]) >> 4;
+    int32_t adc_h = (regData[6] << 8) | regData[7];
+    //Now compensate them, reference page 25 and 26 of the datasheet
+    sensorData.temperature = compTemperature(adc_t) / 100.0f;   //return is 1u = 0.01 degC
+    sensorData.pressure = compPressure(adc_p) / 256.0f;         //Q24.8 format 
+    sensorData.humidity = compHumidity(adc_h) / 1024.0f;         //Q22.10 format
+    return rslt;
+}
+
+/// @brief Getter for sensor data (Temp, pressure and humidity)
+/// @return const BME280_Data_t containing the sensor data
+const BME68X_Data_t BME68X::getSensorData(){
+    return sensorData;
 }
 
 /// @brief Sensor Initializer
@@ -379,6 +407,36 @@ int8_t BME68X::putSensorToSleep(){
     return rslt;
 }
 
+
+int16_t BME68X::compTemperature(int32_t adc_t){
+    int32_t var1, var2, var3;
+    var1 = ((int32_t)adc_t >> 3) - ((int32_t)sensorCalib.par_t1 << 1);
+    var2 = (var1 * (int32_t)sensorCalib.par_t2) >> 11;
+    var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
+    var3 = ((var3) * ((int32_t)sensorCalib.par_t3 << 4)) >> 14;
+    t_fine = (int32_t)(var2 + var3);
+    return (int16_t)(((t_fine * 5) + 128) >> 8);
+}
+
+uint32_t BME68X::compPressure(uint32_t adc_p){
+    int32_t var1, var2, var3, tPress;
+    var1 = (((int32_t)t_fine) >> 1) - 64000;
+    var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) * (int32_t)sensorCalib.par_p6) >> 2;
+    var2 = var2 + ((var1 * (int32_t)sensorCalib.par_p5) << 1);
+    var2 = (var2 >> 2) + ((int32_t)sensorCalib.par_p4 << 16);
+    var1 = (((((var1 >> 2) * (var1 >> 2)) >> 13) * ((int32_t)sensorCalib.par_p3 << 5)) >> 3) +
+           (((int32_t)sensorCalib.par_p2 * var1) >> 1);
+    var1 = var1 >> 18;
+    var1 = ((32768 + var1) * (int32_t)sensorCalib.par_p1) >> 15;
+    tPress = 1048576 - adc_p;
+    tPress = (int32_t)((tPress - (var2 >> 12)) * ((uint32_t)3125));
+    /*TO FINISH Page 23 of BME688 Manual*/
+
+}
+
+uint32_t BME68X::compHumidity(){
+
+}
 
 
 //***********************************************************//

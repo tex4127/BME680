@@ -42,6 +42,11 @@ void setup() {
     Serial.printf("osr_t -> %02x\n", conf.os_temp);
     Serial.printf("osr_p -> %02x\n", conf.os_press);
     Serial.printf("osr_h -> %02x\n", conf.os_hum);
+
+    delay(1000);
+    Serial.printf("Taking Initial Reading\n");
+    bme->readSensor();
+    
     while(1)
         ;
 }
