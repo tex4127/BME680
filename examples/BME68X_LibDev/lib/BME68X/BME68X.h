@@ -571,7 +571,7 @@ class BME68X{
     int8_t getVariantId(void);
     int8_t setSensorMode(BME68X_Mode_e mode);
     int8_t putSensorToSleep(void);
-    int32_t compTemperature(int32_t);
+    int16_t compTemperature(int32_t);
     uint32_t compPressure(int32_t);
     uint32_t compHumidity(int32_t);
 
