@@ -177,13 +177,13 @@ int8_t BME68X::readSensor(){
 #endif
     }
     //Now parse our data
-    int32_t adc_p = ((regData[0] << 16) | (regData[1] << 8) | regData[2]) >> 4;
-    int32_t adc_t = ((regData[3] << 16) | (regData[4] << 8) | regData[5]) >> 4;
-    int32_t adc_h = (regData[6] << 8) | regData[7];
+    uint32_t adc_p = ((regData[0] << 16) | (regData[1] << 8) | regData[2]) >> 4;
+    uint32_t adc_t = ((regData[3] << 16) | (regData[4] << 8) | regData[5]) >> 4;
+    uint16_t adc_h = (regData[6] << 8) | regData[7];
     //Now compensate them, reference page 25 and 26 of the datasheet
     sensorData.temperature = compTemperature(adc_t) / 100.0f;   //return is 1u = 0.01 degC
     sensorData.pressure = compPressure(adc_p) / 256.0f;         //Q24.8 format 
-    sensorData.humidity = compHumidity(adc_h) / 1024.0f;         //Q22.10 format
+    sensorData.humidity = compHumidity(adc_h) / 1024.0f;        //Q22.10 format
     return rslt;
 }
 
@@ -407,7 +407,9 @@ int8_t BME68X::putSensorToSleep(){
     return rslt;
 }
 
-
+/// @brief Calculates the Temperature from the raw measurement
+/// @param adc_t Raw Temp Measurement
+/// @return value is 1u = 0.01 degC
 int16_t BME68X::compTemperature(int32_t adc_t){
     int32_t var1, var2, var3;
     var1 = ((int32_t)adc_t >> 3) - ((int32_t)sensorCalib.par_t1 << 1);
@@ -418,6 +420,9 @@ int16_t BME68X::compTemperature(int32_t adc_t){
     return (int16_t)(((t_fine * 5) + 128) >> 8);
 }
 
+/// @brief Calculates the Pressure from the raw measurement
+/// @param adc_p Raw Pressure Measurement
+/// @return Q24.8 format 
 uint32_t BME68X::compPressure(uint32_t adc_p){
     int32_t var1, var2, var3, tPress;
     var1 = (((int32_t)t_fine) >> 1) - 64000;
@@ -431,11 +436,40 @@ uint32_t BME68X::compPressure(uint32_t adc_p){
     tPress = 1048576 - adc_p;
     tPress = (int32_t)((tPress - (var2 >> 12)) * ((uint32_t)3125));
     /*TO FINISH Page 23 of BME688 Manual*/
-
+    tPress = (tPress < 0x40000000) ? (tPress << 1) / var1 : (tPress / var1) << 1;
+    var1 = ((int32_t)sensorCalib.par_p9 * (int32_t)(((tPress >> 3) * (tPress >> 3)) >> 13)) >> 12;
+    var2 = ((int32_t)(tPress >> 2) * (int32_t)sensorCalib.par_p8) >> 13;
+    var3 =((int32_t)(tPress >> 8) * (int32_t)(tPress >> 8) * (int32_t)(tPress >> 8) * (int32_t)sensorCalib.par_p10) >> 17;
+    tPress = (int32_t)(tPress) + ((var1 + var2 + var3 + ((int32_t)sensorCalib.par_p7 << 7)) >> 4);
+    return (uint32_t)tPress;
 }
 
-uint32_t BME68X::compHumidity(){
-
+/// @brief Calculates the Humidity from the raw measurement
+/// @param adc_h Raw Pressure Measurement
+/// @return Q22.10 format
+uint32_t BME68X::compHumidity(uint32_t adc_h){
+    int32_t var1, var2, var3, var4, var5, var6, tScaled, cHum;
+    tScaled = (((int32_t)t_fine * 5) + 128) >> 8;
+    var1 = (int32_t)(adc_h - ((int32_t)((int32_t)sensorCalib.par_h1 * 16))) -
+           (((tScaled * (int32_t)sensorCalib.par_h3) / ((int32_t)100)) >> 1);
+    var2 =
+        ((int32_t)sensorCalib.par_h2 *
+         (((tScaled * (int32_t)sensorCalib.par_h4) / ((int32_t)100)) +
+          (((tScaled * ((tScaled * (int32_t)sensorCalib.par_h5) / ((int32_t)100))) >> 6) / ((int32_t)100)) +
+          (int32_t)(1 << 14))) >> 10;
+    var3 = var1 * var2;
+    var4 = (int32_t)sensorCalib.par_h6 << 7;
+    var4 = ((var4) + ((tScaled * (int32_t)sensorCalib.par_h7) / ((int32_t)100))) >> 4;
+    var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
+    var6 = (var4 * var5) >> 1;
+    cHum = (((var3 + var6) >> 10) * ((int32_t)1000)) >> 12;
+    /* Cap at 100%rH */
+    if (cHum > 100000){
+        cHum = 100000;
+    }else if (cHum < 0){
+        cHum = 0;
+    }
+    return (uint32_t)cHum;
 }
 
 

@@ -11,6 +11,11 @@ BME68X *bme;
 SSPIClass* sspi;
 BBSPIClass* bbspi;
 
+void printData(BME68X_Data_t d){
+    Serial.printf("Temperature -> %02.2f \u00B0C\n", d.temperature);
+    Serial.printf("Pressure    -> %06.2f pA\n", d.pressure);
+    Serial.printf("Humidity    -> %02.2 perCent\n", d.humidity);
+}
 
 void setup() {
     Serial.begin(115200);
@@ -46,7 +51,8 @@ void setup() {
     delay(1000);
     Serial.printf("Taking Initial Reading\n");
     bme->readSensor();
-    
+    BME68X_Data_t data = bme->getSensorData();
+    printData(data);
     while(1)
         ;
 }
