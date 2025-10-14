@@ -258,6 +258,9 @@ uint8_t BME680::fetchData(){
     nFields = 0;
     b_status = bme68x_get_data(b_mode, b_data, &nFields, &b_dev);
     iFields = 0;
+    Serial.printf("adc_t -> %lu\n", b_dev.adc_t);
+    Serial.printf("adc_p -> %lu\n", b_dev.adc_p);
+    Serial.printf("adc_h -> %u \n", b_dev.adc_h);
     return nFields;
 }
 

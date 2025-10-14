@@ -1232,6 +1232,7 @@ static int8_t read_field_data(uint8_t index, struct bme68x_data *data, struct bm
         adc_gas_res_high = (uint16_t)((uint32_t)buff[15] * 4 | (((uint32_t)buff[16]) / 64));
         gas_range_l = buff[14] & BME68X_GAS_RANGE_MSK;
         gas_range_h = buff[16] & BME68X_GAS_RANGE_MSK;
+
         if (dev->variant_id == BME68X_VARIANT_GAS_HIGH)
         {
             data->status |= buff[16] & BME68X_GASM_VALID_MSK;

@@ -87,7 +87,7 @@
 #define BME68X_REGISTER_MEM_PAGE        0xF3
 #define BME68X_SPI_MEMPAGE_0            0x10
 #define BME68X_SPI_MEMPAGE_1            0x00
-
+#define BME68X_ADC_START                0x1D
 #define BME68X_STATUS_IM_UPDATE         0x01
 
 
@@ -571,7 +571,7 @@ class BME68X{
     int8_t getVariantId(void);
     int8_t setSensorMode(BME68X_Mode_e mode);
     int8_t putSensorToSleep(void);
-    int16_t compTemperature(int32_t);
+    int16_t compTemperature(uint32_t);
     uint32_t compPressure(uint32_t);
     uint32_t compHumidity(uint32_t);
 

@@ -167,26 +167,67 @@ const BME68X_Config_t BME68X::getConfig(){
 }
 
 int8_t BME68X::readSensor(){
-    uint8_t regAddr = BME68X_REGISTER_PRESS_ADC_0;
-    uint8_t regData[8] = {0};
     int8_t rslt = BME_STATUS_OK;
-    rslt = read(regAddr, regData, 8, &interface);
+    uint32_t adc_t, adc_p;
+    uint16_t adc_h;
+    uint8_t regAddr = 0x1F;
+    uint8_t regData[3] = {0};
+    rslt = read(regAddr, regData, 2, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    adc_p = (regData[0] << 12) | (regData[1] << 4) | (regData[2] >>4);
+    memset(regData, 0, 3);
+    regAddr = 0x22;
+    rslt = read(regAddr, regData, 3, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    adc_t = (regData[0] << 12) | (regData[1] << 4) | (regData[2] >> 4);
+    memset(regData, 0, 3);
+    regAddr = 0x26;
+    rslt = read(regAddr, regData, 2, &interface);
+    if(BME_STATUS_OK != rslt){
+        return rslt;
+    }
+    adc_h = (regData[0] << 8) | (regData[1]);
+    Serial.printf("adc_t -> %lu\n", adc_t);
+    Serial.printf("adc_p -> %lu\n", adc_p);
+    Serial.printf("adc_h -> %u \n", adc_h);
+    Serial.printf("cTemp -> %0.2f\n", compTemperature(adc_t)/100.0f);
+    return rslt;
+}
+
+/*
+int8_t BME68X::readSensor(){
+    uint8_t regAddr = 0x1D;
+    uint8_t regData[17] = {0}; //this gets ALL Data
+    uint16_t adc_gh, adc_gl;
+    int8_t rslt = BME_STATUS_OK;
+    rslt = read(regAddr, regData, 17, &interface);
     if(BME_STATUS_OK != rslt){
 #ifdef __DEBUG__
         Serial.printf("\nError BME68X::readSensor()\n>>regAddr %02x\n", regAddr);
+        Serial.printf("\nNew Data Status -> %02x\n", regData[0] & 0x80); //gas measuring and measureing in this bit as well
 #endif
     }
     //Now parse our data
-    uint32_t adc_p = ((regData[0] << 16) | (regData[1] << 8) | regData[2]) >> 4;
-    uint32_t adc_t = ((regData[3] << 16) | (regData[4] << 8) | regData[5]) >> 4;
-    uint16_t adc_h = (regData[6] << 8) | regData[7];
+    uint32_t adc_p = ((regData[2] * 4096) | (regData[3] * 16) | (regData[4] / 16));
+    uint32_t adc_t = ((regData[5] * 4096) | (regData[6] * 16) | (regData[7] / 16));
+    uint16_t adc_h = (regData[8] * 256) | regData[9];
+    adc_gl = (uint16_t)((uint32_t)regData[13] * 4 | (((uint32_t)regData[14]) / 64));
+    adc_gh = (uint16_t)((uint32_t)regData[15] * 4 | (((uint32_t)regData[16]) / 64));
+    Serial.printf("0x1D  -> %02x\n", regData[0]);
+    Serial.printf("adc_t -> %lu\n", adc_t);
+    Serial.printf("adc_p -> %lu\n", adc_p);
+    Serial.printf("adc_h -> %u \n", adc_h);
     //Now compensate them, reference page 25 and 26 of the datasheet
     sensorData.temperature = compTemperature(adc_t) / 100.0f;   //return is 1u = 0.01 degC
     sensorData.pressure = compPressure(adc_p) / 256.0f;         //Q24.8 format 
     sensorData.humidity = compHumidity(adc_h) / 1024.0f;        //Q22.10 format
     return rslt;
 }
-
+*/
 /// @brief Getter for sensor data (Temp, pressure and humidity)
 /// @return const BME280_Data_t containing the sensor data
 const BME68X_Data_t BME68X::getSensorData(){
@@ -410,14 +451,15 @@ int8_t BME68X::putSensorToSleep(){
 /// @brief Calculates the Temperature from the raw measurement
 /// @param adc_t Raw Temp Measurement
 /// @return value is 1u = 0.01 degC
-int16_t BME68X::compTemperature(int32_t adc_t){
-    int32_t var1, var2, var3;
+int16_t BME68X::compTemperature(uint32_t adc_t){
+    int32_t var1, var2, var3, calc_temp;
     var1 = ((int32_t)adc_t >> 3) - ((int32_t)sensorCalib.par_t1 << 1);
     var2 = (var1 * (int32_t)sensorCalib.par_t2) >> 11;
     var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
     var3 = ((var3) * ((int32_t)sensorCalib.par_t3 << 4)) >> 14;
     t_fine = (int32_t)(var2 + var3);
-    return (int16_t)(((t_fine * 5) + 128) >> 8);
+    calc_temp = (int16_t)(((t_fine * 5) + 128) >> 8);
+    return calc_temp;
 }
 
 /// @brief Calculates the Pressure from the raw measurement

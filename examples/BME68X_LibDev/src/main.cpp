@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include "BME68X.h"
 
-//#define __USEHSPI__
+#define __USEHSPI__
 //#define __USESSPI__
-#define __USEBBSPI__
+//#define __USEBBSPI__
 
 const char* fwName = "BME680 Example Script ";
 
@@ -14,7 +14,7 @@ BBSPIClass* bbspi;
 void printData(BME68X_Data_t d){
     Serial.printf("Temperature -> %02.2f \u00B0C\n", d.temperature);
     Serial.printf("Pressure    -> %06.2f pA\n", d.pressure);
-    Serial.printf("Humidity    -> %02.2 perCent\n", d.humidity);
+    Serial.printf("Humidity    -> %02.2f perCent\n", d.humidity);
 }
 
 void setup() {
@@ -47,16 +47,19 @@ void setup() {
     Serial.printf("osr_t -> %02x\n", conf.os_temp);
     Serial.printf("osr_p -> %02x\n", conf.os_press);
     Serial.printf("osr_h -> %02x\n", conf.os_hum);
-
-    delay(1000);
-    Serial.printf("Taking Initial Reading\n");
     bme->readSensor();
-    BME68X_Data_t data = bme->getSensorData();
-    printData(data);
+    //BME68X_Data_t data = bme->getSensorData();
+    //Serial.println();
+    //printData(data);
     while(1)
         ;
+    delay(1000);
 }
 
 void loop() {
-  
+    delay(1000);
+    bme->readSensor();
+    BME68X_Data_t data = bme->getSensorData();
+    Serial.println();
+    printData(data);
 }

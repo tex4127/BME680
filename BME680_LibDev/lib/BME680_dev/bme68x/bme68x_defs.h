@@ -966,6 +966,11 @@ struct bme68x_dev
 
     /*! Store the info messages */
     uint8_t info_msg;
+
+    /*! remove after testing*/
+    uint32_t adc_t;
+    uint32_t adc_p;
+    uint32_t adc_h;
 };
 
 #endif /* BME68X_DEFS_H_ */
