@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include "BME68X.h"
 
-#define __USEHSPI__
+//#define __USEHSPI__
 //#define __USESSPI__
-//#define __USEBBSPI__
+#define __USEBBSPI__
 
 const char* fwName = "BME680 Example Script ";
 
@@ -15,6 +15,7 @@ void printData(BME68X_Data_t d){
     Serial.printf("Temperature -> %02.2f \u00B0C\n", d.temperature);
     Serial.printf("Pressure    -> %06.2f pA\n", d.pressure);
     Serial.printf("Humidity    -> %02.2f perCent\n", d.humidity);
+    Serial.printf("Resistance  -> %02.2f \u03A9\n", d.resistance);
 }
 
 void setup() {
@@ -40,26 +41,31 @@ void setup() {
     Serial.printf("Setting BME68X_Config\n");
     bme->setConfig(BME68X_Mode_e::BME68X_MODE_FORCED,
                     BME68X_OS_e::BME68X_OS_16X, BME68X_OS_e::BME68X_OS_16X, BME68X_OS_e::BME68X_OS_16X, 
-                    BME68X_FilterSize_e::BME68X_FILTER_SIZE_15);
+                    BME68X_FilterSize_e::BME68X_FILTER_SIZE_127);
+    bme->setHeaterConfig(300, 100);
     Serial.printf("Getting BME68X_Config\n");
     BME68X_Config_t conf = bme->getConfig();
     Serial.printf("Mode  -> %02x\n", conf.mode);
     Serial.printf("osr_t -> %02x\n", conf.os_temp);
     Serial.printf("osr_p -> %02x\n", conf.os_press);
     Serial.printf("osr_h -> %02x\n", conf.os_hum);
-    bme->readSensor();
-    //BME68X_Data_t data = bme->getSensorData();
-    //Serial.println();
-    //printData(data);
-    while(1)
-        ;
-    delay(1000);
-}
-
-void loop() {
     delay(1000);
     bme->readSensor();
     BME68X_Data_t data = bme->getSensorData();
     Serial.println();
     printData(data);
+    //while(1)
+    //    ;
+    delay(1000);
+}
+
+void loop() {
+    bme->setOperationMode(BME68X_Mode_e::BME68X_MODE_FORCED);
+    printf("Delay -> %lu\n", bme->getMeasurementTime());
+    delayMicroseconds(bme->getMeasurementTime());
+    bme->readSensor();
+    BME68X_Data_t data = bme->getSensorData();
+    Serial.println();
+    printData(data);
+    delay(1000);
 }

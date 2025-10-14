@@ -34,12 +34,13 @@ void setup() {
   Serial.printf("Configuring BME680\n");
   bme->setSensor_OS(BME680_OS_16X, BME680_OS_16X, BME680_OS_16X);
   bme->setHeaterProfile(300, 100);
+  delay(500);
   Serial.printf("Fetch Data()\n");
   bme->fetchData();
   BME680_Data bmeData = {0};
   bme->getData(&bmeData);
-  //while(1)
-  //    ; 
+  while(1)
+      ; 
   Serial.printf("Moving to Loop!\n");
 }
 
@@ -53,5 +54,5 @@ void loop() {
     Serial.printf("%010lu | %03.2f \u00B0C | %07.2f Pa | %03.2f \u00B0/\u2092 | %.2f \u03A9\n",millis(), bmeData.temperature, bmeData.pressure, bmeData.humidity, bmeData.gas_resistance);
 
   }
-  delay(10000);
+  delay(1000);
 }

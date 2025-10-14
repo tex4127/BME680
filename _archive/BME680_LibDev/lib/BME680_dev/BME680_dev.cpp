@@ -39,6 +39,9 @@ BME680::BME680(uint8_t csPin, SSPIClass* sspi){
 /// @brief Stack begin method for the BME680 Device
 /// @return True if chip found and intiliezed, False if not
 void BME680::begin(){
+#ifdef __DEBUG__
+    Serial.printf("BME68X::begin()\n");
+#endif
     b_status = BME68X_OK;
     memset(&b_dev, 0, sizeof(b_dev));
     memset(&b_conf, 0 ,sizeof(b_conf));
@@ -256,6 +259,7 @@ const bme68x_heatr_conf* BME680::getHeaterConfiguration(){
 /// @return Number of data fileds stored in b_data buffer
 uint8_t BME680::fetchData(){
     nFields = 0;
+    Serial.printf("fetchData()\n");
     b_status = bme68x_get_data(b_mode, b_data, &nFields, &b_dev);
     iFields = 0;
     Serial.printf("adc_t -> %lu\n", b_dev.adc_t);
@@ -391,7 +395,7 @@ int8_t BME680_SPIRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *int
             digitalWrite(comm->spi.cs, LOW);
             comm->spi.m_spi->transfer(regAddr | 0x80); //for all SPI Reads we must force bit 7 high
 #ifdef __DEBUG__
-            Serial.printf("\n\tregAddr -> %02x Data -> {", regAddr);
+            Serial.printf("\n\tregAddr -> %02x Data -> {", regAddr | 0x80);
 #endif
             memset(regData, 0xFF, len); //Reset our data
             for(uint32_t i = 0 ; i < len; i++){

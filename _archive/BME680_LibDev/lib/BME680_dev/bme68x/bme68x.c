@@ -399,7 +399,7 @@ int8_t bme68x_get_conf(struct bme68x_conf *conf, struct bme68x_dev *dev)
     /* starting address of the register array for burst read*/
     uint8_t reg_addr = BME68X_REG_CTRL_GAS_1;
     uint8_t data_array[BME68X_LEN_CONFIG];
-
+    
     rslt = bme68x_get_regs(reg_addr, data_array, 5, dev);
     if (!conf)
     {
