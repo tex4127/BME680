@@ -372,17 +372,17 @@ int8_t BME68X::getCalibData(){
     int rslt;
     uint8_t regData[BME68X_LEN_COEFF_ALL];
     //Get our coeffs
-    Serial.printf("READ COEFF 1\n");
+    //Serial.printf("READ COEFF 1\n");
     rslt = readRegisters(BME68X_REGISTER_COEFF_1, regData, BME68X_LEN_COEFF_1);
     if(BME_STATUS_OK != rslt){
         return rslt;
     }
-    Serial.printf("READ COEFF 2\n");
+    //Serial.printf("READ COEFF 2\n");
     rslt = readRegisters(BME68X_REGISTER_COEFF_2, &regData[BME68X_LEN_COEFF_1], BME68X_LEN_COEFF_2);
     if(BME_STATUS_OK != rslt){
         return rslt;
     }
-    Serial.printf("READ COEFF 3\n");
+    //Serial.printf("READ COEFF 3\n");
     rslt = readRegisters(BME68X_REGISTER_COEFF_3, &regData[BME68X_LEN_COEFF_1 + BME68X_LEN_COEFF_2], BME68X_LEN_COEFF_3);
     if(BME_STATUS_OK != rslt){
         return rslt;
